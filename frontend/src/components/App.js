@@ -1,72 +1,39 @@
-import { useEffect, useRef, useState } from "react"
 import './App.css';
-import { io } from "socket.io-client";
-import { v4 } from "uuid";
+import Login from "./login";
+import Chat from './chat';
+import ErrorPage from './errorpage';
+import axios from 'axios';
+import { useEffect, useState } from 'react';
+import { Route, Routes, Navigate, useLocation } from 'react-router-dom';
 
-const userName = prompt("What is your name?");
-const socket = io("http://localhost:8080");
-socket.emit("new-user", userName);
+async function isAuthenticated() {
+  try{
+    const response = await axios.get('http://localhost:8080/authenticate', { withCredentials: true});
+    return response.data.result;
+  }catch (e) {
+    console.log(e);
+  }
+}
 
 function App() {
 
-  const [message, setMessage] = useState("");
-  const [chatMessages, setChatMessages] = useState([]);
-  const hasJoined = useRef(false);
-
-  function addMessages(message) {
-    setChatMessages( prevChatMessages => [...prevChatMessages, message]);
-  }
-  
-  function handleKeydown(event) {
-    if(event.key==='Enter' && message){
-      sendMessage();
-    }
-  }
-
-  function sendMessage() {
-    socket.emit("send-chat-message", message);
-    addMessages("You: "+message);
-    setMessage("");
-  }
+  const [userIsAuthenticated, setUserIsAuthenticated] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
-    socket.on("receive-chat-message", addMessages);
-    socket.on("user-connected", addMessages);
-    socket.on("user-disconnected", addMessages);
-    if(!hasJoined.current){
-      addMessages("You joined.");
-      hasJoined.current = true;
+    const checkAuth = async () => {
+      const auth = await isAuthenticated();
+      setUserIsAuthenticated(auth);
     }
-
-    return (() => {
-      socket.off("user-connected", addMessages);
-      socket.off("receive-chat-message", addMessages);
-      socket.off("user-disconnected", addMessages);
-    });
-  }, [message]);
-
+    checkAuth();
+  }, [location.pathname]);
+  
   return (
-    <div className="chat-container">
-      {
-      chatMessages.map( chatMessage => {
-        return (
-          <div key={v4()}>
-          <em>{chatMessage}</em>
-          <br />
-          </div>
-        )
-        }
-      )
-      }
-      <input type="text" value={message} placeholder='Message' onKeyDown={handleKeydown} onChange={ event => {
-        setMessage(event.target.value);
-      }} />
-      <button type="submit" onClick={() => {
-        if(message){
-          sendMessage();
-        }
-      }} >Send</button>
-    </div>
+    <Routes>
+      <Route path='/' element={ userIsAuthenticated ? <Navigate to='/chat' /> : <Login /> } />
+      <Route path='/chat' element={ userIsAuthenticated ? <Chat /> : <Navigate to='/' /> } />
+      <Route path='*' element={ <ErrorPage title="Page Not Found" message="The resource that you're looking for is not available. Please check again the url of the resource that you're looking for." /> } />
+    </Routes>
   );
 }
 
