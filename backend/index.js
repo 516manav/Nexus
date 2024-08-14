@@ -41,6 +41,19 @@ app.use(passport.session());
 
 app.use(express.json());
 
+app.use((req, res, next) => {
+    if(req.isAuthenticated()) {
+        const oldSessionData = req.session;
+        req.session.regenerate( err => {
+            if(err)
+            return next(err, 'Not able to regenerate session ID');
+            Object.assign(req.session, oldSessionData);
+            next();
+        });
+    }else
+    next();
+});
+
 app.use( (err, info, req, res, next) => {
     console.log("Error handling middleware");
     res.send({ ...err, additionalErrorInfo: info});
@@ -75,10 +88,37 @@ io.on("connection", socket => {
     })
 });
 
-app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+app.get('/auth/google', (req, res, next) => {
+    passport.authenticate('google', { scope: ['profile', 'email'], state: JSON.stringify(req.query.remember) })(req, res, next);
+});
 
-app.get('/auth/google/nexus', passport.authenticate('google'), (req, res) => {
-    res.redirect('http://localhost:3000/chat');
+app.get('/auth/google/nexus', (req, res, next) => {
+    const rememberMe = JSON.parse(req.query.state || '');
+    passport.authenticate('google', (err, user) => {
+        if(err)
+        return next(err, 'Failed to login using google oauth');
+        
+        req.login(user, (e) => {
+            if(e)
+            return next(e, 'Failed to create a cookie after google oauth athourization');
+            if(rememberMe === 'true')
+            req.session.cookie.maxAge = 1000*60*60*24*30;
+            res.redirect('http://localhost:3000/chat');
+        });
+    })(req, res, next);
+});
+
+app.get('/logout', (req, res) => {
+    req.logout(err => {
+        if(err)
+        return res.send({result: false});
+        req.session.destroy(e => {
+            if(e)
+            next(e, 'Error destroying the user session');
+            res.clearCookie('connect.sid');
+            return res.send({result: true});
+        })
+    });
 });
 
 app.post('/register', async (req, res) => {
@@ -105,8 +145,10 @@ app.post('/login', (req, res) => {
             if(err) {
                 return res.send({message: 'failure-creating-cookie'});
             }
+            if(req.body.remember)
+                req.session.cookie.maxAge = 1000*60*60*24*30;
             return res.send({message: 'success'});
-        })
+        });
     })(req, res);
 });
 

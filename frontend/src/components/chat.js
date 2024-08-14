@@ -1,11 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import { v4 } from "uuid";
-
-const userName = 'Manav';
-const socket = io("http://localhost:8080", { autoConnect: false });
+import { Tooltip, IconButton } from "@mui/material";
+import LogoutIcon from '@mui/icons-material/Logout';
+import axios from 'axios';
+import { useNavigate } from "react-router-dom";
 
 function Chat() {
+
+  const userName = 'Manav';
+  const socket = io("http://localhost:8080", { autoConnect: false });
+  const navigate = useNavigate();
 
   useEffect(() => {
     socket.connect();
@@ -13,11 +18,23 @@ function Chat() {
     return () => {
       socket.disconnect();
     };
-  }, []);
+  }, [socket]);
 
   const [message, setMessage] = useState("");
   const [chatMessages, setChatMessages] = useState([]);
   const hasJoined = useRef(false);
+
+  async function handleLogout() {
+    try{
+      const response = await axios.get('http://localhost:8080/logout', { withCredentials: true });
+      if(response.data.result)
+      navigate('/');
+      else 
+      alert('Logout Failed. Please try again!');
+    }catch(err){
+      console.log(err);
+    }
+  }
 
   function addMessages(message) {
     setChatMessages( prevChatMessages => [...prevChatMessages, message]);
@@ -49,7 +66,7 @@ function Chat() {
       socket.off("receive-chat-message", addMessages);
       socket.off("user-disconnected", addMessages);
     });
-  }, [message]);
+  }, [message, socket]);
 
   return (
     <div className="chat-container">
@@ -72,6 +89,11 @@ function Chat() {
           sendMessage();
         }
       }} >Send</button>
+      <Tooltip title='Logout'>
+        <IconButton aria-label="logout" onClick={handleLogout}>
+          <LogoutIcon />
+        </IconButton>
+      </Tooltip>
     </div>
   );
 }

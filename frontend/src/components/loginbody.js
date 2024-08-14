@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { TextField, Button, InputAdornment, IconButton, Collapse, Fade } from "@mui/material";
+import { TextField, Button, InputAdornment, IconButton, Collapse, Fade, Checkbox, FormControlLabel } from "@mui/material";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import GoogleIcon from '@mui/icons-material/Google';
@@ -17,6 +17,7 @@ function LoginBody() {
         username: "",
         status: ""
     });
+    const [checked, setChecked] = useState(false);
     const [emailValid, setEmailValid] = useState(true);
     const [passwordValid, setPasswordValid] = useState({
         check: true,
@@ -65,7 +66,7 @@ function LoginBody() {
     }
 
     function handleGoogle() {
-        window.location.href = 'http://localhost:8080/auth/google';
+        window.location.href = `http://localhost:8080/auth/google?remember=${checked}`;
     }
 
     async function handleSubmit() {
@@ -82,6 +83,7 @@ function LoginBody() {
             const response = await axios.post('http://localhost:8080/login', {
                 email: user.email,
                 password: user.password,
+                remember: checked
             }, { withCredentials: true });
             if(response.data.message === 'user-not-registered'){
                 setShowRegister(true);
@@ -164,6 +166,7 @@ function LoginBody() {
                     ),
                 }}/>
             </Collapse>
+            <FormControlLabel control={<Checkbox checked={checked} onChange={() => setChecked(prevChecked => !prevChecked)} size="small"/>} label="Remember me for a month" />
             <Button variant="outlined" color="primary" onClick={ handleSubmit } fullWidth disabled={ handleButtonDisable() }>
                 { showRegister ? "Create Your Account" : "Login" }
             </Button>

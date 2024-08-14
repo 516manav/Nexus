@@ -23,6 +23,7 @@ function App() {
   useEffect(() => {
     const checkAuth = async () => {
       const auth = await isAuthenticated();
+      console.log(auth);
       setUserIsAuthenticated(auth);
     }
     checkAuth();
