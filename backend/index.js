@@ -37,4 +37,4 @@ const io = new Server(server, {
     }
 });
 
-socketSetup(io);
+socketSetup(io, db);

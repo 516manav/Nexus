@@ -27,13 +27,17 @@ function LoginBody() {
     const [showRegister, setShowRegister] = useState(false);
     const [confirmPasswordValid, setConfirmPasswordValid] = useState(true);
 
+    function capitalize(str) {
+        return str.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+    }
+
     async function handleSubmit() {
         try{
             if(showRegister){
                 await axios.post('http://localhost:8080/register', {
                     email: user.email,
                     password: user.password,
-                    username: registerData.username,
+                    username: capitalize(registerData.username),
                     status: registerData.status || "Available"
                 });
                 setShowRegister(false);

@@ -67,7 +67,7 @@ router.post('/login', (req, res, next) => {
 });
 
 router.get('/authenticate', (req, res) => {
-    res.send({result: req.isAuthenticated()});
+    res.send({result: req.isAuthenticated(), user: req.user});
 });
 
 export default router;

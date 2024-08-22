@@ -9,7 +9,7 @@ import { Route, Routes, Navigate, useLocation } from 'react-router-dom';
 async function isAuthenticated() {
   try{
     const response = await axios.get('http://localhost:8080/authenticate', { withCredentials: true});
-    return response.data.result;
+    return response.data;
   }catch (e) {
     console.log(e);
   }
@@ -19,20 +19,26 @@ function App() {
 
   const [userIsAuthenticated, setUserIsAuthenticated] = useState(false);
   const location = useLocation();
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     const checkAuth = async () => {
       const auth = await isAuthenticated();
-      console.log(auth);
-      setUserIsAuthenticated(auth);
+      setUserIsAuthenticated(auth.result);
+      setUser(auth.user);
+      setLoading(false);
     }
     checkAuth();
   }, [location.pathname]);
+
+  if(loading)
+    return <></>
   
   return (
     <Routes>
       <Route path='/' element={ userIsAuthenticated ? <Navigate to='/chat' /> : <Login /> } />
-      <Route path='/chat' element={ userIsAuthenticated ? <Chat /> : <Navigate to='/' /> } />
+      <Route path='/chat' element={ userIsAuthenticated ? <Chat user={user}/> : <Navigate to='/' /> } />
       <Route path='*' element={ <ErrorPage title="Page Not Found" message="The resource that you're looking for is not available. Please check again the url of the resource that you're looking for." /> } />
     </Routes>
   );

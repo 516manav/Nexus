@@ -16,8 +16,9 @@ function Navbar ({ isMobile, theme, drawerOpen, handleDrawer }) {
     async function handleLogout() {
         try{
           const response = await axios.get('http://localhost:8080/logout', { withCredentials: true });
-          if(response.data.result)
-          navigate('/');
+          if(response.data.result){
+            navigate('/');
+          }          
           else 
           alert('Logout Failed. Please try again!');
         }catch(err){
