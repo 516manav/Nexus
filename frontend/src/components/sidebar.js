@@ -1,7 +1,7 @@
 import DrawerContent from "./drawercontent.js";
 import { Drawer, Toolbar } from "@mui/material";
 
-function Sidebar ({ isMobile, drawerOpen, handleDrawer, details, user }) {
+function Sidebar ({ isMobile, drawerOpen, handleDrawer, details, user, socket, handleListClick }) {
 
     return (
         <Drawer variant={isMobile ? 'temporary' : 'permanent'}
@@ -17,7 +17,7 @@ function Sidebar ({ isMobile, drawerOpen, handleDrawer, details, user }) {
             }
         }} >
             <Toolbar />
-            <DrawerContent details={details} user={user}/>
+            <DrawerContent handleListClick={handleListClick} details={details} user={user} socket={socket} handleDrawer={handleDrawer}/>
         </Drawer>
     );
 }

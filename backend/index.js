@@ -38,3 +38,5 @@ const io = new Server(server, {
 });
 
 socketSetup(io, db);
+
+export { io };

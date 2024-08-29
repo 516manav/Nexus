@@ -1,4 +1,3 @@
-import './App.css';
 import Login from "./login";
 import Chat from './chat';
 import ErrorPage from './errorpage';

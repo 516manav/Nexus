@@ -1,9 +1,14 @@
 import passport from "passport";
-import {Strategy as LocalStrategy} from 'passport-local';
+import { Strategy as LocalStrategy } from 'passport-local';
 import GoogleStrategy from 'passport-google-oauth2';
 import bcrypt from 'bcrypt';
 import db from './db.js';
 import config from "./config.js";
+import { io } from "./index.js";
+
+function capitalize(str) {
+    return str.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+}
 
 passport.use('local', new LocalStrategy({
     usernameField: 'email',
@@ -40,7 +45,8 @@ passport.use('google', new GoogleStrategy({
         try {
             const result = await db.query("SELECT * FROM users WHERE email = $1", [profile.email]);
             if(result.rows.length === 0){
-                const newUser = await db.query("INSERT INTO users (email, password, username, status) VALUES ($1, $2, $3, $4) RETURNING (email, id, username)", [profile.email, 'google', profile.displayName, 'Available']);
+                const newUser = await db.query("INSERT INTO users (email, password, username, status) VALUES ($1, $2, $3, $4) RETURNING email, id, username", [profile.email, 'google', capitalize(profile.displayName), 'Available']);
+                io.emit('new-user-added');
                 cb(null, newUser.rows[0]);
             } else {
                 const user = {

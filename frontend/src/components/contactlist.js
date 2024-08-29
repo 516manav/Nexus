@@ -1,37 +1,134 @@
-import { useEffect } from "react";
-import { List, ListItemButton, ListItemAvatar, Avatar, ListItemText, Typography, Grow } from "@mui/material";
-import ErrorIcon from '@mui/icons-material/PriorityHighOutlined';
+import { useEffect, useState } from "react";
+import { List, ListItem, ListItemButton, ListItemAvatar, Avatar, ListItemText, Typography, Grow, IconButton, Tooltip, Fab, Zoom, Box } from "@mui/material";
+import { PriorityHighOutlined, Favorite, FavoriteBorder, GroupRemove, Add } from '@mui/icons-material';
+import CreateGroup from "./creategroup.js";
+import isEqual from 'lodash/isEqual.js';
 
-function ContactList({ content, setIsLoading }) {
+function ContactList({ content, socket, user, tab, users, handleListClick, handleDrawer }) {
+
+    const [hover, setHover] = useState(-1);
+    const [array, setArray] = useState(null);
+    const [favourites, setFavourites] = useState(null);
+    const [buttons, setButtons] = useState(null);
+    const [showCreateGroup, setShowCreateGroup] = useState(false);
+    const [transition, setTransition] = useState(true);
+    const [selected, setSelected] = useState(-1);
+
+    useEffect(() => {
+        if(!isEqual(content.array, array)){
+            setTransition(false);
+            setTimeout(() => {
+                setTransition(true);
+            }, 25);
+            setArray(content.array);
+        }
+        setFavourites(content.favourites);
+    }, [content, array]);
+
+    useEffect(() => {
+        if(tab === 1)
+        setButtons({
+            filled: <Favorite />,
+            outline: <FavoriteBorder />,
+            filledTip: 'Remove from Favourites',
+            outlineTip: 'Add to Favourites'
+            
+        });
+        else if(tab === 3)
+        setButtons({
+            filled: <Favorite />,
+            outline: <Favorite />,
+            filledTip: 'Remove from Favourites',
+            outlineTip: 'Remove from Favourites'                
+        });
+        else
+        setButtons({
+            filled: <GroupRemove />,
+            outline: <GroupRemove />,
+            filledTip: 'Leave Group',
+            outlineTip: 'Leave Group' 
+        })
+    }, [tab]);
+
+    function isFavourite(favouriteId) {
+        return favourites.includes(favouriteId);
+    }
+
+    function handleFavourites(id) {
+        if(tab === 1){
+            if(!favourites.includes(id))
+            socket.emit('add-favourite', user.id, id);
+            else
+            socket.emit('delete-favourite', user.id, id);
+        }else if(tab === 3) {
+            if(array.some(element => element.id === id))
+            socket.emit('delete-favourite', user.id, id);
+        }else{
+            if(array.some(element => element.id === id))
+            socket.emit('leave-group', user.id, id);
+        }
+        socket.emit('details', user);
+    }
 
     function contentGenerator() {
-        if(content && content.length !== 0)
-        return content.map((element, index) => (
-            <Grow in={true} timeout={250}>
-                <ListItemButton key={index} 
-                // onClick={() => handleListClick(element.id)}
-                >
-                    <ListItemAvatar>
-                        <Avatar>
-                            {element.name.split(' ').map(word => word.charAt(0).toUpperCase()).join('')}
-                        </Avatar>
-                    </ListItemAvatar>
-                    <ListItemText primary={element.name} secondary={element.email} />
-                </ListItemButton>
+        if(transition) {
+        if(array && array.length !== 0)
+        return array.map((element, index) => (
+            <Grow in={transition} timeout={250} key={index}>
+                <ListItem disablePadding onMouseEnter={() => setHover(index)} onMouseLeave={() => setHover(-1)}>
+                    <ListItemButton  selected={selected === element.id} >
+                        <ListItemAvatar onClick={() => {setSelected(element.id); handleListClick({...element, tab: tab}); handleDrawer();}}>
+                            <Avatar>
+                                {element.name.split(' ').slice(0, 2).map(word => word.charAt(0).toUpperCase()).join('')}
+                            </Avatar>
+                        </ListItemAvatar>
+                        <ListItemText onClick={() => {setSelected(element.id); handleListClick({...element, tab: tab}); handleDrawer();}} primary={element.name} secondary={element.email} 
+                        sx={{'& .MuiListItemText-primary': {
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                            },
+                            '& .MuiListItemText-secondary': {
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                            }}}/>
+                        <Grow in={index === hover} timeout={250}>
+                            <Tooltip title={favourites && isFavourite(element.id) ? buttons.filledTip : buttons.outlineTip}>
+                                <IconButton edge='end' onClick={() => handleFavourites(element.id)}>
+                                    {favourites && isFavourite(element.id) ? buttons.filled : buttons.outline}
+                                </IconButton>
+                            </Tooltip>
+                        </Grow>
+                    </ListItemButton>
+                </ListItem>
             </Grow>
         ));
         else
-        return (<Grow in={true} timeout={250}><Typography variant='body1' sx={{textAlign: 'center', fontSize: '1rem', paddingY: 2}}><ErrorIcon sx={{verticalAlign: 'sub', fontSize: '1.2rem'}} />No data found</Typography></Grow>)
-    }        
-
-    useEffect(() => {
-        setIsLoading(false);
-    });
+        return (<Grow in={true} timeout={250}><Typography variant='body1' sx={{textAlign: 'center', fontSize: '1rem', paddingY: 2}}><PriorityHighOutlined sx={{verticalAlign: 'sub', fontSize: '1.2rem'}} />No data found</Typography></Grow>)
+    }}
 
     return(
-        <List>
-            {contentGenerator()}
-        </List>
+        <Box>
+            <List>
+                {contentGenerator()}
+            </List>
+            <br />
+            <br />
+            <br />
+            <Zoom in={tab === 2} >
+                <Tooltip title='Create Group'>
+                    <Fab color="primary" size="large" sx={{
+                        position: 'fixed',
+                        bottom: 16,
+                        left: 179
+                    }} onClick={() => setShowCreateGroup(true)}>
+                        <Add />
+                    </Fab>
+                </Tooltip>        
+            </Zoom>
+            <CreateGroup users={users} socket={socket} user={user} open={showCreateGroup} setOpen={setShowCreateGroup}/>
+        </Box>
     );
 }
 

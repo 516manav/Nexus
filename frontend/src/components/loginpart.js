@@ -1,8 +1,8 @@
-import { TextField, InputAdornment, IconButton } from "@mui/material";
-import { Visibility, VisibilityOff } from "@mui/icons-material";
+import { TextField, InputAdornment, IconButton, Box, Typography } from "@mui/material";
+import { Visibility, VisibilityOff, Diversity2 } from "@mui/icons-material";
 import { useState, useEffect } from "react";
 
-function LoginPart ({ user, setPasswordValid, setEmailValid, setUser, emailValid, passwordValid }) {
+function LoginPart ({ user, setConfirmPasswordValid, registerData, setPasswordValid, setEmailValid, setUser, emailValid, passwordValid }) {
 
     const [showPassword, setShowPassword] = useState(false);
 
@@ -39,10 +39,18 @@ function LoginPart ({ user, setPasswordValid, setEmailValid, setUser, emailValid
     }
 
     return (
-        <>
-        <TextField id="email" label="Email" type="email" required fullWidth onChange={handleChange} value={user.email} onFocus={() => setEmailValid(true)} onBlur={() => setEmailValid(emailValidate(user.email) || user.email === "" )} error={ !emailValid } helperText={ emailValid ? '' : 'Invalid email address'}/>
-        <TextField id="password" label="Password" type={showPassword ? "text" : "password"} required fullWidth onChange={handleChange} value={user.password}
+        <Box>
+        <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgb(78, 153, 247)', marginY: 1}}><Diversity2 sx={{marginRight: 0.5}}/><Typography variant="h5">Nexus</Typography></Box>
+        <TextField sx={{marginTop: 1.1}} InputProps={{sx: {borderRadius: 5}}} size="small" id="email" label="Email" type="email" required fullWidth onChange={handleChange} value={user.email} onFocus={() => setEmailValid(true)} onBlur={() => setEmailValid(emailValidate(user.email) || user.email === "" )} error={ !emailValid } helperText={ emailValid ? '' : 'Invalid email address'}/>
+        <TextField sx={{marginTop: 1.1}} size="small" id="password" label="Password" type={showPassword ? "text" : "password"} required fullWidth onChange={handleChange} value={user.password}
+            onBlur={() => {
+                if(user.password === registerData.confirmPassword)
+                setConfirmPasswordValid(true);
+                else
+                setConfirmPasswordValid(false);
+            }}
             InputProps={ {
+                sx: {borderRadius: 5},
                 endAdornment: (
                     <InputAdornment position="end">
                         <IconButton onClick={() => setShowPassword( prevShowPassword => !prevShowPassword)} >
@@ -54,7 +62,7 @@ function LoginPart ({ user, setPasswordValid, setEmailValid, setUser, emailValid
             error={ !passwordValid.check }
             helperText={ passwordValid.message }
         />
-        </>
+        </Box>
     );
 }
 
