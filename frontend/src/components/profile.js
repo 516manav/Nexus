@@ -27,10 +27,13 @@ function Profile({ socket, user, showProfile, setShowProfile, handleLogout, isAd
 
     useEffect(() => {
         if(profile){
-        if(profile.password !== 'google')
-        setDisabled(changePassword && (profile.currentPassword === '' || profile.newPassword === '' || !passwordValid));
-        else
-        setDisabled(changePassword && (profile.newPassword === '' || !passwordValid));
+            if(changePassword) {
+                if(profile.password !== 'google')
+                setDisabled(profile.currentPassword === '' || profile.newPassword === '' || !passwordValid || profile.name === '');
+                else
+                setDisabled(profile.newPassword === '' || !passwordValid || profile.name === '');
+            }else
+            setDisabled(profile.name === ''); 
         }
     }, [changePassword, profile, passwordValid]);
 
@@ -38,7 +41,7 @@ function Profile({ socket, user, showProfile, setShowProfile, handleLogout, isAd
         socket.emit('get-user-profile', user);
         function handleUserProfile(updatedProfile) {
             if(updatedProfile !== 'error') {
-                setProfile({...updatedProfile, currentPassword: '', newPassword: ''});
+                setProfile({...updatedProfile, currentPassword: '', newPassword: '', avatar: updatedProfile.name});
                 handleTransition(false);
                 setChangePassword(false);
             } else
@@ -78,7 +81,7 @@ function Profile({ socket, user, showProfile, setShowProfile, handleLogout, isAd
         <Dialog open={show} onClose={handleClose} TransitionComponent={Transition} onTransitionExited={() => {setShowProfile(false); setProfile(null);}}>
             <DialogTitle sx={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
                 <Typography component='div' variant="h6" sx={{ color: '#1976d2'}}>Profile</Typography>
-                <Avatar>{profile.name.split(' ').slice(0, 2).map(word => word[0].toUpperCase()).join('')}</Avatar>
+                <Avatar>{profile.avatar.split(' ').slice(0, 2).map(word => word[0].toUpperCase()).join('')}</Avatar>
             </DialogTitle>
             <DialogContent>
                 <Box>
@@ -102,10 +105,10 @@ function Profile({ socket, user, showProfile, setShowProfile, handleLogout, isAd
                         <IconButton><Delete /></IconButton>
                     </Zoom>
                 </Tooltip>}
-                <Tooltip title={edit ? 'Save Changes' : 'Close'} onClick={edit ? handleSave : handleClose}>
+                <Tooltip title={edit ? 'Save Changes' : 'Close'}>
                     <Box component='span'>
                         <Zoom in={transition} > 
-                            <IconButton disabled={disabled}>
+                            <IconButton disabled={disabled} onClick={edit ? handleSave : handleClose}>
                             {edit ? <Save color="primary" sx={{opacity: disabled ? 0.5 : 1}}/> : <Close color="primary"/>}
                             </IconButton>
                         </Zoom>

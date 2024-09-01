@@ -2,12 +2,10 @@ import { useCallback, useState } from "react";
 import axios from "axios";
 import { Close, AccountCircle, ManageAccounts, Logout, Diversity2 } from '@mui/icons-material';
 import { Tooltip, IconButton, AppBar, Toolbar, Typography, Menu, MenuItem, ListItemIcon, ListItemText } from "@mui/material";
-import { useNavigate } from "react-router-dom";
 import Profile from './profile.js';
 
 function Navbar ({ user, isMobile, theme, drawerOpen, handleDrawer, socket }) {
 
-    const navigate = useNavigate();
     const [anchorEl, setAnchorEl] = useState();
     const [showProfile, setShowProfile] = useState(false);
 
@@ -19,14 +17,14 @@ function Navbar ({ user, isMobile, theme, drawerOpen, handleDrawer, socket }) {
         try{
           const response = await axios.get('http://localhost:8080/logout', { withCredentials: true });
           if(response.data.result){
-            navigate('/');
+            socket.emit('logout', user.id);
           }          
           else 
           alert('Logout Failed. Please try again!');
         }catch(err){
           console.log(err);
         }
-    }, [navigate]);
+    }, [user, socket]);
 
     return (
         <AppBar position='sticky' sx={{zIndex: theme.zIndex.drawer + 1}}>
@@ -52,7 +50,7 @@ function Navbar ({ user, isMobile, theme, drawerOpen, handleDrawer, socket }) {
             <ListItemText primary='Logout' />
             </MenuItem>
           </Menu>
-          {showProfile && <Profile user={user} isAdmin={true} handleLogout={handleLogout} socket={socket} setShowProfile={setShowProfile} showProfile={showProfile}/>}
+          {showProfile && <Profile user={user.id} isAdmin={true} handleLogout={handleLogout} socket={socket} setShowProfile={setShowProfile} showProfile={showProfile}/>}
         </Toolbar>
       </AppBar>
     );

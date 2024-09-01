@@ -115,12 +115,11 @@ function ContactList({ content, socket, user, tab, users, handleListClick, handl
             </List>
             <br />
             <br />
-            <br />
             <Zoom in={tab === 2} >
                 <Tooltip title='Create Group'>
                     <Fab color="primary" size="large" sx={{
                         position: 'fixed',
-                        bottom: 16,
+                        bottom: 8,
                         left: 179
                     }} onClick={() => setShowCreateGroup(true)}>
                         <Add />

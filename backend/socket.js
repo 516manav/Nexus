@@ -7,6 +7,11 @@ function capitalize(str) {
 
 export default function socketSetup(io, db) {
     io.on("connection", socket => {
+
+        socket.on('join-room', userId => {
+            socket.join(userId);
+            console.log(`Socket ${socket.id} joined room ${userId}`);
+        })
         
         socket.on('details', async user => {
             const details = {
@@ -20,7 +25,7 @@ export default function socketSetup(io, db) {
             details.groups = result.rows;
             result = await db.query('SELECT id, email, username AS name FROM users INNER JOIN favourites ON favouriteId = id WHERE userId = $1', [user.id]);
             details.favourites = result.rows;
-            socket.emit('receive-details', details);
+            io.to(user.id).emit('receive-details', details);
         });
 
         socket.on('delete-user', async userId => {
@@ -76,6 +81,49 @@ export default function socketSetup(io, db) {
             const memberCount = await db.query('SELECT COUNT(userid) FROM groupdetails WHERE groupid = $1', [groupId]);
             if(memberCount.rows[0].count === '0')
             await db.query('DELETE FROM groupnames WHERE id = $1', [groupId]);
+        });
+
+        socket.on('get-personal-messages', async (userId, userClickedId) => {
+            const result = await db.query('SELECT personalmessages.id AS id, senderid, username AS sendername, email AS senderemail, receiverid, textmessage, messagetime FROM personalmessagedetails INNER JOIN personalmessages ON personalmessages.id = messageid INNER JOIN users ON senderid = users.id WHERE userid = $1 AND ((senderid = $1 AND receiverid = $2) OR (senderid = $2 AND receiverid = $1)) ORDER BY messagetime ASC', [userId, userClickedId]);
+            socket.emit('personal-messages', result.rows);
+        });
+
+        socket.on('send-personal-message', async newMessage => {
+            io.to(newMessage.receiverid).emit('receive-personal-message', newMessage);
+            socket.to(newMessage.senderid).emit('receive-personal-message', newMessage);
+            const result = await db.query('INSERT INTO personalmessages (id, senderid, receiverid, textmessage) VALUES ($1, $2, $3, $4) RETURNING id', [newMessage.id, newMessage.senderid, newMessage.receiverid, newMessage.textmessage]);
+            db.query('INSERT INTO personalmessagedetails VALUES ($1, $2)', [newMessage.senderid, result.rows[0].id]);
+            db.query('INSERT INTO personalmessagedetails VALUES ($1, $2)', [newMessage.receiverid, result.rows[0].id]);
+        });
+
+        socket.on('delete-for-everyone', (messageid, user, userClicked) => {
+            db.query('DELETE FROM personalmessages WHERE id = $1', [messageid]);
+            io.to(user).emit('deleted', messageid);
+            io.to(userClicked).emit('deleted', messageid);
+        });
+
+        socket.on('delete-for-me', async (messageid, user) => {
+            io.to(user).emit('deleted', messageid);
+            await db.query('DELETE FROM personalmessagedetails WHERE userid = $1 AND messageid = $2', [user, messageid]);
+            const result = await db.query('SELECT COUNT(userid) FROM personalmessagedetails WHERE messageid = $1', [messageid]);
+            if(result.rows[0].count === '0')
+            db.query('DELETE FROM personalmessages WHERE id = $1', [messageid]);
+        });
+
+        socket.on('clear-chat', async (userId, userClickedId) => {
+            io.to(userId).emit('chat-cleared');
+            const result = await db.query('SELECT id FROM personalmessages WHERE (senderid = $1 AND receiverid = $2) OR (senderid = $2 AND receiverid = $1)', [userId, userClickedId]);
+            result.rows.forEach( async message => {
+                await db.query('DELETE FROM personalmessagedetails WHERE messageid = $1 AND userid = $2', [message.id, userId]);
+                const res = await db.query('SELECT COUNT(userid) FROM personalmessagedetails WHERE messageid = $1', [message.id]);
+                if(res.rows[0].count === '0')
+                db.query('DELETE FROM personalmessages WHERE id = $1', [message.id]);
+            });
+        });
+
+        socket.on('logout', userId => {
+            io.to(userId).emit('socket-disconnected');
+            io.sockets.adapter.rooms.delete(userId);
         });
 
         socket.on('disconnect', () => {

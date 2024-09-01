@@ -1,4 +1,4 @@
-import { IconButton, Avatar, Box, Typography, Menu, MenuItem, ListItemIcon, ListItemText } from "@mui/material";
+import { IconButton, Avatar, Box, Typography, Menu, MenuItem, ListItemIcon, ListItemText, Divider } from "@mui/material";
 import { MoreVert, InfoOutlined, DeleteOutline } from '@mui/icons-material';
 import { useState } from "react";
 import Profile from "./profile.js";
@@ -11,6 +11,10 @@ function ContactBar({ user, socket, userClicked, setUserClicked }) {
 
     function handleClose() {
         setAnchorEl(null);
+    }
+
+    function handleClearChat() {
+        socket.emit('clear-chat', user.id, userClicked.id);
     }
 
     return(
@@ -29,19 +33,20 @@ function ContactBar({ user, socket, userClicked, setUserClicked }) {
                     <IconButton sx={{marginRight: {xs: '9px', sm: '17px'}}} onClick={event => setAnchorEl(event.currentTarget)}><MoreVert /></IconButton>  
                 </Box>      
             </Box> 
-            <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}>
+            <Menu sx={{'& .MuiList-root': {padding: 0}}} anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}>
                 <MenuItem onClick={() => {setShowProfile(true); handleClose();}}>
                 <ListItemIcon><InfoOutlined /></ListItemIcon>
                 <ListItemText primary='More info'/>
                 </MenuItem>
-                <MenuItem onClick={handleClose}>
+                <MenuItem onClick={() => {handleClearChat(); handleClose();}}>
                 <ListItemIcon><DeleteOutline /></ListItemIcon>
                 <ListItemText primary='Clear chat'/>
                 </MenuItem>
             </Menu>
             {(showProfile && userClicked.tab !== 2) ? (<Profile isAdmin={false} user={userClicked.id} showProfile={showProfile} setShowProfile={setShowProfile} socket={socket}/>)
             : (<GroupProfile setUserClicked={setUserClicked} user={user} group={userClicked.id} showProfile={showProfile} setShowProfile={setShowProfile} socket={socket} />)}
-        </Box>              
+            <Divider />
+        </Box>
     );
 }
 
