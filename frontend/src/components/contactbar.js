@@ -1,10 +1,10 @@
-import { IconButton, Avatar, Box, Typography, Menu, MenuItem, ListItemIcon, ListItemText, Divider } from "@mui/material";
+import { IconButton, Avatar, Box, Typography, Menu, MenuItem, ListItemIcon, ListItemText, Divider, Grow } from "@mui/material";
 import { MoreVert, InfoOutlined, DeleteOutline } from '@mui/icons-material';
 import { useState } from "react";
 import Profile from "./profile.js";
 import GroupProfile from "./groupprofile.js";
 
-function ContactBar({ user, socket, userClicked, setUserClicked }) {
+function ContactBar({ transition, user, socket, userClicked, setUserClicked }) {
 
     const [anchorEl, setAnchorEl] = useState(null);
     const [showProfile, setShowProfile] = useState(false);
@@ -18,7 +18,8 @@ function ContactBar({ user, socket, userClicked, setUserClicked }) {
     }
 
     return(
-        <Box>
+        <Grow in={transition} timeout={200}>
+            <Box>
             <Box sx={{display: 'flex', justifyContent: 'space-between'}}>
                 <Box sx={{display: 'flex', alignItems: 'center', flexGrow: 1, minWidth: 0}}>
                     <IconButton onClick={() => setShowProfile(true)} sx={{marginLeft: '7px', marginY: '2px'}}>
@@ -46,7 +47,8 @@ function ContactBar({ user, socket, userClicked, setUserClicked }) {
             {(showProfile && userClicked.tab !== 2) ? (<Profile isAdmin={false} user={userClicked.id} showProfile={showProfile} setShowProfile={setShowProfile} socket={socket}/>)
             : (<GroupProfile setUserClicked={setUserClicked} user={user} group={userClicked.id} showProfile={showProfile} setShowProfile={setShowProfile} socket={socket} />)}
             <Divider />
-        </Box>
+            </Box>
+        </Grow>
     );
 }
 

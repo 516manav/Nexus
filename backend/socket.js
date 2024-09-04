@@ -6,6 +6,16 @@ function capitalize(str) {
 }
 
 export default function socketSetup(io, db) {
+
+    async function unreadMessages(newMessage) {
+        const result = await db.query('SELECT messagecount FROM unreadmessages WHERE userid = $1 AND senderid = $2', [newMessage.receiverid, newMessage.senderid]);
+        if(result.rows.length === 0)
+        await db.query("INSERT INTO unreadmessages VALUES($1, $2, $3)", [newMessage.receiverid, newMessage.senderid, 1]);
+        else
+        await db.query("UPDATE unreadmessages SET messagecount = $3 WHERE userid = $1 AND senderid = $2", [newMessage.receiverid, newMessage.senderid, result.rows[0].messagecount+1]);
+        return true;
+    }
+
     io.on("connection", socket => {
 
         socket.on('join-room', userId => {
@@ -19,11 +29,11 @@ export default function socketSetup(io, db) {
                 groups: [],
                 favourites: []
             };
-            let result = await db.query('SELECT id, email, username AS name FROM users');
+            let result = await db.query('SELECT id, email, username AS name, messagecount FROM users INNER JOIN unreadmessages ON senderid = users.id WHERE userid = $1 UNION SELECT id, email, username AS name, 0 AS messagecount FROM users WHERE users.id NOT IN (SELECT senderid FROM unreadmessages WHERE userid = $1) ORDER BY messagecount DESC', [user.id]);
             details.users = result.rows;
             result = await db.query('SELECT gn.id AS id, gn.groupName AS name FROM groupNames AS gn INNER JOIN groupDetails AS gd ON gn.id = gd.groupId WHERE userId = $1', [user.id]);
             details.groups = result.rows;
-            result = await db.query('SELECT id, email, username AS name FROM users INNER JOIN favourites ON favouriteId = id WHERE userId = $1', [user.id]);
+            result = await db.query('SELECT id, email, username AS name, messagecount FROM unreadmessages INNER JOIN favourites ON favouriteId = senderid INNER JOIN users ON favouriteId = users.id WHERE unreadmessages.userid = $1 UNION SELECT id, email, username AS name, 0 AS messagecount FROM favourites INNER JOIN users ON favouriteId = users.id WHERE favouriteId NOT IN (SELECT senderid FROM unreadmessages WHERE userid = $1) ORDER BY messagecount DESC', [user.id]);
             details.favourites = result.rows;
             io.to(user.id).emit('receive-details', details);
         });
@@ -89,11 +99,25 @@ export default function socketSetup(io, db) {
         });
 
         socket.on('send-personal-message', async newMessage => {
+            if(io.sockets.adapter.rooms.has(newMessage.receiverid))
             io.to(newMessage.receiverid).emit('receive-personal-message', newMessage);
+            else
+            unreadMessages(newMessage);
             socket.to(newMessage.senderid).emit('receive-personal-message', newMessage);
             const result = await db.query('INSERT INTO personalmessages (id, senderid, receiverid, textmessage) VALUES ($1, $2, $3, $4) RETURNING id', [newMessage.id, newMessage.senderid, newMessage.receiverid, newMessage.textmessage]);
             db.query('INSERT INTO personalmessagedetails VALUES ($1, $2)', [newMessage.senderid, result.rows[0].id]);
             db.query('INSERT INTO personalmessagedetails VALUES ($1, $2)', [newMessage.receiverid, result.rows[0].id]);
+        });
+
+        socket.on('unread-message', async newMessage => {
+           const output = await unreadMessages(newMessage);
+           const result = await db.query('SELECT id, email, username AS name, messagecount FROM users INNER JOIN unreadmessages ON senderid = users.id WHERE userid = $1 AND senderid = $2', [newMessage.receiverid, newMessage.senderid]);
+           io.to(newMessage.receiverid).emit('unread-update', result.rows[0]);
+        });
+
+        socket.on('remove-unread', (userId, userClickedId) => {
+            db.query('DELETE FROM unreadmessages WHERE userid = $1 AND senderid = $2', [userId, userClickedId]);
+            io.to(userId).emit('removed-unread', userClickedId);
         });
 
         socket.on('delete-for-everyone', (messageid, user, userClicked) => {

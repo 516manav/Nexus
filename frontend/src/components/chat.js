@@ -24,7 +24,7 @@ function Chat({ user }) {
         setTransition(true);
         setContactClicked(element);
       }, 100);
-    }    
+    }
   }, [contactClicked]);
 
   useEffect(() => {
@@ -38,14 +38,24 @@ function Chat({ user }) {
     function handleSocketDisconnected() {
       navigate('/');
     }
+    function handleUnreadUpdate(newEntry) {
+      setUserDetails(prevValue => ({ ...prevValue, users: [newEntry, ...prevValue.users.filter(entry => entry.id !== newEntry.id)], favourites: prevValue.favourites.some(entry => entry.id === newEntry.id) ? [newEntry, ...prevValue.favourites.filter(entry => entry.id !== newEntry.id)] : prevValue.favourites}));
+    }
+    function handleRemoveUnread(userClickedId) {
+      setUserDetails(prevValue => ({ ...prevValue, users: prevValue.users.map(entry => entry.id === userClickedId ? {...entry, messagecount: 0} : entry), favourites: prevValue.favourites.some(entry => entry.id === userClickedId) ? prevValue.favourites.map(entry => entry.id === userClickedId ? {...entry, messagecount: 0} : entry) : prevValue.favourites}));
+    }
     const socket = io('http://localhost:8080');
     setSocket(socket);
+    socket.on('removed-unread', handleRemoveUnread);
     socket.on('socket-disconnected', handleSocketDisconnected);
     socket.on('connect', handleSocketConnect);
     socket.on('new-user-added', handleSocketConnect);
     socket.on('receive-details', handleSocketReceiveDetails);
+    socket.on('unread-update', handleUnreadUpdate);
 
     return (() => {
+      socket.off('unread-update', handleUnreadUpdate);
+      socket.off('removed-unread', handleRemoveUnread);
       socket.off('socket-disconnected', handleSocketDisconnected);
       socket.off('connect', handleSocketConnect);
       socket.off('new-user-added', handleSocketConnect);

@@ -5,6 +5,7 @@ function Sidebar ({ isMobile, drawerOpen, handleDrawer, details, user, socket, h
 
     return (
         <Drawer variant={isMobile ? 'temporary' : 'permanent'}
+        {...(isMobile ? {keepMounted: true} : {})}
         anchor="left"
         open={drawerOpen || !isMobile}
         onClose={handleDrawer}

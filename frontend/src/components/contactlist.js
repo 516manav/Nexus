@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { List, ListItem, ListItemButton, ListItemAvatar, Avatar, ListItemText, Typography, Grow, IconButton, Tooltip, Fab, Zoom, Box } from "@mui/material";
+import { List, ListItem, ListItemButton, ListItemAvatar, Avatar, ListItemText, Typography, Grow, IconButton, Tooltip, Fab, Zoom, Box, Badge } from "@mui/material";
 import { PriorityHighOutlined, Favorite, FavoriteBorder, GroupRemove, Add } from '@mui/icons-material';
 import CreateGroup from "./creategroup.js";
 import isEqual from 'lodash/isEqual.js';
@@ -15,7 +15,9 @@ function ContactList({ content, socket, user, tab, users, handleListClick, handl
     const [selected, setSelected] = useState(-1);
 
     useEffect(() => {
-        if(!isEqual(content.array, array)){
+        if(content && array && isEqual(content.array.map(element => ({...element, messagecount: 0})), array.map(element => ({...element, messagecount: 0}))))
+        setArray(content.array);
+        else if(!isEqual(content.array, array)){
             setTransition(false);
             setTimeout(() => {
                 setTransition(true);
@@ -50,6 +52,14 @@ function ContactList({ content, socket, user, tab, users, handleListClick, handl
         })
     }, [tab]);
 
+    function handleClick(element) {
+        setSelected(element.id);
+        if(element.messagecount > 0)
+        socket.emit('remove-unread', user.id, element.id);
+        handleListClick({...element, tab: tab});
+        handleDrawer();
+    }
+
     function isFavourite(favouriteId) {
         return favourites.includes(favouriteId);
     }
@@ -77,12 +87,14 @@ function ContactList({ content, socket, user, tab, users, handleListClick, handl
             <Grow in={transition} timeout={250} key={index}>
                 <ListItem disablePadding onMouseEnter={() => setHover(index)} onMouseLeave={() => setHover(-1)}>
                     <ListItemButton  selected={selected === element.id} >
-                        <ListItemAvatar onClick={() => {setSelected(element.id); handleListClick({...element, tab: tab}); handleDrawer();}}>
-                            <Avatar>
-                                {element.name.split(' ').slice(0, 2).map(word => word.charAt(0).toUpperCase()).join('')}
-                            </Avatar>
+                        <ListItemAvatar onClick={() => handleClick(element)}>
+                            <Badge badgeContent={element.messagecount} color="primary">
+                                <Avatar>
+                                    {element.name.split(' ').slice(0, 2).map(word => word.charAt(0).toUpperCase()).join('')}
+                                </Avatar>
+                            </Badge>
                         </ListItemAvatar>
-                        <ListItemText onClick={() => {setSelected(element.id); handleListClick({...element, tab: tab}); handleDrawer();}} primary={element.name} secondary={element.email} 
+                        <ListItemText onClick={() => handleClick(element)} primary={element.name} secondary={element.email} 
                         sx={{'& .MuiListItemText-primary': {
                                 whiteSpace: 'nowrap',
                                 overflow: 'hidden',

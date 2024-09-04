@@ -30,11 +30,10 @@ function ContentArea ({ user, isMobile, socket, userClicked, setUserClicked, tra
           }}>
             {userClicked !== null ?
             (<Box sx={{minWidth: 0, display: 'flex', flexDirection: 'column', height: '100%'}}>
-              <Grow in={transition} timeout={150}>
                 <Box sx={{display: 'flex', flexDirection: 'column', height: '100%'}}>
-                  <ContactBar user={user} socket={socket} userClicked={userClicked} setUserClicked={setUserClicked}/>
+                  <ContactBar transition={transition} user={user} socket={socket} userClicked={userClicked} setUserClicked={setUserClicked}/>
                   <Box sx={{flexGrow: 1, overflowY: 'auto'}}><MessageArea user={user} setMessage={setSend} message={send} userClicked={userClicked} socket={socket} /></Box>
-                  <Box sx={{
+                  <Grow in={transition} timeout={200} sx={{
                     width: 'calc(100%-32px)',
                     marginTop: '5px',
                     marginBottom: '8px',
@@ -47,16 +46,15 @@ function ContentArea ({ user, isMobile, socket, userClicked, setUserClicked, tra
                     <Box sx={{display: 'flex', width: '100%'}}>
                       <TextField variant="outlined" value={message} sx={{flexGrow: 1}} InputProps={{sx: {borderRadius: 5}}} placeholder="Message" multiline maxRows={3} onChange={e => setMessage(e.target.value)}/>
                       <Zoom in={Boolean(message)} timeout={250} mountOnEnter unmountOnExit>
-                        <Fab sx={{marginLeft: 0.75}} aria-label="send" color="primary" onClick={handleClick}>
+                        <Fab sx={{marginLeft: 0.5}} aria-label="send" color="primary" onClick={handleClick}>
                           <Send />
                         </Fab>              
                       </Zoom>
                     </Box>
-                  </Box>
+                  </Grow>
                 </Box>
-              </Grow>   
             </Box>)           
-            : <InitialContentPage />}
+            : <InitialContentPage socket={socket} />}
         </Box>
     );
 }

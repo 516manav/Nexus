@@ -17,8 +17,11 @@ function MessageArea ({ message, setMessage, socket, userClicked, user }) {
             setMessages(messageArray);
         }
         function handleNewMessage(newMessage) {
-            setMessages(prevValue => [...prevValue, newMessage]);
-            scrollToBottom();
+            if(newMessage.senderid === userClicked.id || newMessage.receiverid === userClicked.id) {
+                setMessages(prevValue => [...prevValue, newMessage]);
+                scrollToBottom();
+            } else
+            socket.emit('unread-message', newMessage);
         }
         function handleDelete(messageid) {
             setMessages(prevValue => prevValue.filter(message => message.id !== messageid));
@@ -59,8 +62,10 @@ function MessageArea ({ message, setMessage, socket, userClicked, user }) {
 
     function handleScroll() {
         if(containerRef.current) {
-            const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
-            setShowButton(scrollTop + clientHeight < scrollHeight);
+            setTimeout(() => {
+                const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
+                setShowButton(scrollTop + clientHeight < scrollHeight);
+            }, 150);            
         }
     }
 

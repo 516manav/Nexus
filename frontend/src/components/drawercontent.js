@@ -16,7 +16,7 @@ function DrawerContent ({ details, socket, user, handleListClick, handleDrawer }
       else if(currentChip.current === 2)
       setContent({array: details.groups});
       else
-      setContent({array: details.favourites});      
+      setContent({array: details.favourites});
     }, [details, user]);
 
     function handleSearch() {
