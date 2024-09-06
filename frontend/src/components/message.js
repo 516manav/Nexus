@@ -2,8 +2,8 @@ import { Typography, Box, Paper, Grow, IconButton, Menu, MenuItem, ListItemIcon,
 import { useState } from "react";
 import { Delete, DeleteForeverOutlined, DeleteOutlined } from '@mui/icons-material';
 
-function Message ({messageid, socket, sender, userClicked, user, message, time}) {
-    
+function Message ({members, showDate, showSender, isGroupMessage, socket, userClicked, user, message}) {
+
     const [showDelete, setShowDelete] = useState(false);
     const [anchorEl, setAnchorEl] = useState(null);
 
@@ -11,44 +11,87 @@ function Message ({messageid, socket, sender, userClicked, user, message, time})
         setAnchorEl(null);
     }
 
+    function isSameDay(date1, date2) {
+        return (date1.getFullYear() === date2.getFullYear() && date1.getMonth() === date2.getMonth() && date1.getDate() === date2.getDate());
+    }
+
+    function handleDate() {
+        const today = new Date();
+        const yesterday = new Date();
+        yesterday.setDate(today.getDate() - 1);
+        const date = message.messagetime;
+        if(isSameDay(today, date))
+        return 'Today';
+        else if(isSameDay(date, yesterday))
+        return 'Yesterday';
+        else {
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = String(date.getFullYear());
+            return `${day}-${month}-${year}`;
+        }
+    }
+
     function handleDeleteForEveryone() {
-        socket.emit('delete-for-everyone', messageid, user, userClicked);
+        if(members.length !== 0)
+        socket.emit('delete-for-everyone', message.id, user, members, isGroupMessage);
+        else
+        socket.emit('delete-for-everyone', message.id, user, userClicked, isGroupMessage);
         handleClose();
     }
 
     function handleDeleteForMe() {
-        socket.emit('delete-for-me', messageid, user);
+        socket.emit('delete-for-me', message.id, user, isGroupMessage);
         handleClose();
     }
 
-    let messageTime;
-    if(typeof time !== 'object')
-    messageTime = new Date(time);
-    else 
-    messageTime = time;
     return (
-        <Box sx={{ marginTop: 0.5, display: 'flex', flexDirection: sender === user ? 'row-reverse' : 'row'}}>
-            <Box sx={{marginX: 2, display: 'flex', flexDirection: sender === user ? 'row-reverse' : 'row', alignItems: 'center'}} onMouseEnter={() => setShowDelete(true)} onMouseLeave={() => setShowDelete(false)}>
+        Boolean(message.type) ? 
+        (<Box sx={{marginX: 2, marginY: 1, display: 'flex', justifyContent: 'center'}}>
             <Grow in={true}>
-                <Paper component='div' sx={{ display: 'inline-flex', backgroundColor: sender === user ? 'rgb(63, 134, 237)' : '#d9d9d9', color: sender === user ? 'white' : 'black', borderRadius: 5, paddingX: 2, justifyContent: 'space-between', alignItems: 'flex-end'}}>
-                    <Typography sx={{paddingY: 0.5, paddingRight: 1}} variant="body1">{message}</Typography>
-                    <Typography sx={{fontSize: 10, paddingBottom: 0.2}} variant="body2">{String(messageTime.getHours()).padStart(2, '0')+':'+String(messageTime.getMinutes()).padStart(2, '0')}</Typography>
+                <Paper sx={{ display: 'inline-flex', backgroundColor: '#d9d9d9', paddingY: 0.5, paddingX: 2, borderRadius: 5}}>
+                    <Typography sx={{textAlign: 'center', fontStyle: 'italic', overflowWrap: 'break-word', wordBreak: 'break-word'}} variant="caption">{message.textmessage}</Typography>
                 </Paper>
             </Grow>
-            <Grow in={showDelete}>
-                <IconButton sx={{marginX: 0.5}} size="small" onClick={ user === sender ? e => setAnchorEl(e.currentTarget) : handleDeleteForMe}><Delete sx={{color: 'gray', fontSize: 20}}/></IconButton>
-            </Grow>  
-            </Box> 
-            <Menu sx={{'& .MuiList-root': {padding: 0}}} anchorEl={anchorEl} onClose={handleClose} open={Boolean(anchorEl) && user === sender}>
-                <MenuItem onClick={handleDeleteForEveryone}>
-                    <ListItemIcon><DeleteForeverOutlined /></ListItemIcon>
-                    <ListItemText primary='Delete for everyone' />
-                </MenuItem>
-                <MenuItem onClick={handleDeleteForMe}>
-                    <ListItemIcon><DeleteOutlined /></ListItemIcon>
-                    <ListItemText primary='Delete for me' />
-                </MenuItem>
-            </Menu>         
+        </Box>) :
+        <Box>
+            {showDate && <Box sx={{marginX: 2, marginY: 1, display: 'flex', justifyContent: 'center'}}>
+                <Grow in={true}>
+                    <Paper elevation={0} sx={{ display: 'inline-flex', color: 'rgb(63, 134, 237)', border: '1.5px solid rgb(63, 134, 237)', paddingY: 0.5, paddingX: 2, borderRadius: 5}}>
+                        <Typography sx={{textAlign: 'center', fontWeight: 'bold'}} variant="caption">{handleDate()}</Typography>
+                    </Paper>
+                </Grow>
+            </Box>}
+            <Box sx={{ marginTop: showSender ? 1 : 0.5, display: 'flex', flexDirection: message.senderid === user ? 'row-reverse' : 'row'}}>
+                <Box sx={{marginX: 2, display: 'flex', flexDirection: message.senderid === user ? 'row-reverse' : 'row', alignItems: 'center'}} onMouseEnter={() => setShowDelete(true)} onMouseLeave={() => setShowDelete(false)}>
+                <Grow in={true}>
+                    <Paper component='div' sx={{ display: 'flex', flexDirection: "column", backgroundColor: message.senderid === user ? 'rgb(63, 134, 237)' : '#d9d9d9', borderRadius: 5, paddingX: 2, paddingTop: 0.5}}>
+                        {isGroupMessage && user !== message.senderid && showSender && 
+                        <Box component='div' sx={{ display: 'inline-flex', color: message.senderid === user ? 'white' : 'black', justifyContent: 'space-between', alignItems: 'center'}}>
+                            <Typography sx={{paddingRight: 1, color: 'rgb(63, 134, 237)', fontWeight: 'bold', overflowWrap: 'break-word', wordBreak: 'break-word'}} variant="body2">{message.sendername}</Typography>
+                            <Typography sx={{fontSize: 10, fontStyle: 'italic', opacity: 0.65, overflowWrap: 'break-word', wordBreak: 'break-word'}} variant="body2">{'~'+message.senderemail}</Typography>
+                        </Box>}
+                        <Box component='div' sx={{ display: 'inline-flex', color: message.senderid === user ? 'white' : 'black', justifyContent: 'space-between', alignItems: 'flex-end'}}>
+                            <Typography sx={{paddingBottom: 0.5, paddingRight: 1, fontStyle: message.everyone ? 'italic' : 'normal', wordBreak: 'break-word', overflowWrap: 'break-word'}} variant="body1">{message.textmessage}</Typography>
+                            <Typography sx={{fontSize: 10, paddingBottom: 0.2}} variant="body2">{String(message.messagetime.getHours()).padStart(2, '0')+':'+String(message.messagetime.getMinutes()).padStart(2, '0')}</Typography>
+                        </Box>
+                    </Paper>
+                </Grow>
+                {message.type !== 'leave-receipt' && (<Grow in={showDelete && !message.everyone}>
+                    <IconButton sx={{marginX: 0.5}} size="small" onClick={ user === message.senderid ? e => setAnchorEl(e.currentTarget) : handleDeleteForMe}><Delete sx={{color: 'gray', fontSize: 20}}/></IconButton>
+                </Grow>)}  
+                </Box> 
+                <Menu sx={{'& .MuiList-root': {padding: 0}}} anchorEl={anchorEl} onClose={handleClose} open={Boolean(anchorEl) && user === message.senderid}>
+                    <MenuItem onClick={handleDeleteForEveryone}>
+                        <ListItemIcon><DeleteForeverOutlined /></ListItemIcon>
+                        <ListItemText primary='Delete for everyone' />
+                    </MenuItem>
+                    <MenuItem onClick={handleDeleteForMe}>
+                        <ListItemIcon><DeleteOutlined /></ListItemIcon>
+                        <ListItemText primary='Delete for me' />
+                    </MenuItem>
+                </Menu>         
+            </Box>
         </Box>
     );
 }

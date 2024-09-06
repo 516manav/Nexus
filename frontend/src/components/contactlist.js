@@ -4,7 +4,7 @@ import { PriorityHighOutlined, Favorite, FavoriteBorder, GroupRemove, Add } from
 import CreateGroup from "./creategroup.js";
 import isEqual from 'lodash/isEqual.js';
 
-function ContactList({ content, socket, user, tab, users, handleListClick, handleDrawer }) {
+function ContactList({ content, userClicked, socket, user, tab, users, handleListClick, handleDrawer }) {
 
     const [hover, setHover] = useState(-1);
     const [array, setArray] = useState(null);
@@ -55,7 +55,7 @@ function ContactList({ content, socket, user, tab, users, handleListClick, handl
     function handleClick(element) {
         setSelected(element.id);
         if(element.messagecount > 0)
-        socket.emit('remove-unread', user.id, element.id);
+        socket.emit('remove-unread', user.id, element.id, !Boolean(element.email));
         handleListClick({...element, tab: tab});
         handleDrawer();
     }
@@ -71,13 +71,12 @@ function ContactList({ content, socket, user, tab, users, handleListClick, handl
             else
             socket.emit('delete-favourite', user.id, id);
         }else if(tab === 3) {
-            if(array.some(element => element.id === id))
             socket.emit('delete-favourite', user.id, id);
         }else{
-            if(array.some(element => element.id === id))
-            socket.emit('leave-group', user.id, id);
+            socket.emit('leave-group', user, id);
+            if( userClicked && userClicked.id === id && tab === 2)
+            handleListClick(null);
         }
-        socket.emit('details', user);
     }
 
     function contentGenerator() {

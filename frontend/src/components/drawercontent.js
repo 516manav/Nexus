@@ -3,7 +3,7 @@ import { Chip, Box, TextField, InputAdornment } from "@mui/material";
 import { Search } from '@mui/icons-material';
 import ContactList from './contactlist.js';
 
-function DrawerContent ({ details, socket, user, handleListClick, handleDrawer }) {
+function DrawerContent ({ details, userClicked, socket, user, handleListClick, handleDrawer }) {
 
     const [activeChip, setActiveChip] = useState(1);
     const currentChip = useRef(1);
@@ -57,7 +57,7 @@ function DrawerContent ({ details, socket, user, handleListClick, handleDrawer }
                 <Search />
               </InputAdornment>
             )}} />
-            {content === null ? "" : <ContactList users={details.users.map(element => element.email).filter(element => element !== user.email)} content={content} user={user} socket={socket} tab={currentChip.current} handleDrawer={handleDrawer} handleListClick={handleListClick}/>}
+            {content === null ? "" : <ContactList userClicked={userClicked} users={details.users.map(element => element.email)} content={content} user={user} socket={socket} tab={currentChip.current} handleDrawer={handleDrawer} handleListClick={handleListClick}/>}
         </Box>
     );
 }

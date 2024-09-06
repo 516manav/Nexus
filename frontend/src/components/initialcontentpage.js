@@ -2,20 +2,27 @@ import { Box, Typography, Grow } from "@mui/material";
 import { Diversity2 } from "@mui/icons-material";
 import { useEffect } from "react";
 
-function InitialContentPage({ socket }) {
+function InitialContentPage({ socket, userId }) {
 
     useEffect(() => {
         function handleNewMessage(newMessage) {
             socket.emit('unread-message', newMessage);
         }
-        if(socket)
-        socket.on('receive-personal-message', handleNewMessage);
+        function handleNewGroupMessage(newMessage) {
+            socket.emit('unread-group-message', newMessage, userId);
+        }
+        if(socket) {
+            socket.on('receive-personal-message', handleNewMessage);
+            socket.on('receive-group-message', handleNewGroupMessage);
+        }
 
         return () => {
-            if(socket)
-            socket.off('receive-personal-message', handleNewMessage);
+            if(socket) {
+                socket.off('receive-personal-message', handleNewMessage);
+                socket.off('receive-group-message', handleNewGroupMessage);
+            }
         }
-    }, [socket]);
+    }, [socket, userId]);
 
     return(
         <Box sx={{color: '#bdbdbd', textAlign: 'center'}}>
@@ -27,7 +34,6 @@ function InitialContentPage({ socket }) {
                     <Typography variant="body2">Open a chat to continue.</Typography>
                 </Box>
             </Grow>
-            
         </Box>
     );
 }

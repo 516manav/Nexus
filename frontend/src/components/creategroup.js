@@ -31,9 +31,8 @@ function CreateGroup({ open, setOpen, users, user, socket }) {
         }, 300);  
     }
 
-    async function handleSubmit() {
-        await socket.emit('create-group', groupName, members, user.id);
-        socket.emit('details', user);
+    function handleSubmit() {
+        socket.emit('create-group', groupName, members, user.email);
     }
 
     function handleClose() {

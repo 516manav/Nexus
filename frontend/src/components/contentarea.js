@@ -46,7 +46,7 @@ function ContentArea ({ user, isMobile, socket, userClicked, setUserClicked, tra
                     <Box sx={{display: 'flex', width: '100%'}}>
                       <TextField variant="outlined" value={message} sx={{flexGrow: 1}} InputProps={{sx: {borderRadius: 5}}} placeholder="Message" multiline maxRows={3} onChange={e => setMessage(e.target.value)}/>
                       <Zoom in={Boolean(message)} timeout={250} mountOnEnter unmountOnExit>
-                        <Fab sx={{marginLeft: 0.5}} aria-label="send" color="primary" onClick={handleClick}>
+                        <Fab aria-label="send" color="primary" onClick={handleClick}>
                           <Send />
                         </Fab>              
                       </Zoom>
@@ -54,7 +54,7 @@ function ContentArea ({ user, isMobile, socket, userClicked, setUserClicked, tra
                   </Grow>
                 </Box>
             </Box>)           
-            : <InitialContentPage socket={socket} />}
+            : <InitialContentPage socket={socket} userId={user.id} />}
         </Box>
     );
 }

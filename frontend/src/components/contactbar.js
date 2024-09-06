@@ -14,20 +14,20 @@ function ContactBar({ transition, user, socket, userClicked, setUserClicked }) {
     }
 
     function handleClearChat() {
-        socket.emit('clear-chat', user.id, userClicked.id);
+        socket.emit('clear-chat', user.id, userClicked.id, userClicked.tab === 2);
     }
 
     return(
         <Grow in={transition} timeout={200}>
             <Box>
             <Box sx={{display: 'flex', justifyContent: 'space-between'}}>
-                <Box sx={{display: 'flex', alignItems: 'center', flexGrow: 1, minWidth: 0}}>
+                <Box sx={{display: 'flex', alignItems: 'center', flexGrow: 1}}>
                     <IconButton onClick={() => setShowProfile(true)} sx={{marginLeft: '7px', marginY: '2px'}}>
                         <Avatar>{userClicked.name.split(' ').slice(0, 2).map(word => word[0].toUpperCase())}</Avatar>
                     </IconButton>
-                    <Box sx={{marginLeft: '7px', marginY: '2px', flexGrow: 1, minWidth: 0}}>
+                    <Box sx={{marginLeft: '7px', marginY: '2px', flexGrow: 1, width: 10}}>
                         <Typography variant="body1" sx={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>{userClicked.name}</Typography>
-                        <Typography variant="body2" sx={{opacity: 0.67, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>{userClicked.email}</Typography>
+                        {userClicked.email && <Typography variant="body2" sx={{opacity: 0.67, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>{userClicked.email}</Typography>}
                     </Box>
                 </Box>
                 <Box sx={{display: 'flex', alignItems: 'center'}}>

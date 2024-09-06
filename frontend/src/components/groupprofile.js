@@ -29,8 +29,7 @@ function GroupProfile({ user, group, showProfile, setShowProfile, socket, setUse
     }, [group, socket, showProfile]);
 
     function handleLeave() {
-        socket.emit('leave-group', user.id, group);
-        socket.emit('details', user.id);
+        socket.emit('leave-group', user, group);
         handleClose();
         setUserClicked(null);
     }
@@ -50,11 +49,11 @@ function GroupProfile({ user, group, showProfile, setShowProfile, socket, setUse
                     <Box sx={{minWidth: 0, flexGrow: 1}}>
                         <Typography variant="body1" sx={{overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis'}}>{groupDetails.groupname}</Typography>
                         <Typography sx={{fontStyle: 'italic', fontSize: '0.8rem', color: 'rgba(0, 0, 0, 0.6)'}} variant="body2">Created on {groupDetails.created.getDate()+'/'+(groupDetails.created.getMonth()+1)+'/'+groupDetails.created.getFullYear()} at {String(groupDetails.created.getHours()).padStart(2, '0')+':'+String(groupDetails.created.getMinutes()).padStart(2, '0')}</Typography>
-                        <Typography sx={{fontStyle: 'italic', fontSize: '0.8rem', color: 'rgba(0, 0, 0, 0.6)'}} variant="body2">by {groupDetails.email}</Typography>
+                        <Typography sx={{fontStyle: 'italic', fontSize: '0.8rem', color: 'rgba(0, 0, 0, 0.6)'}} variant="body2">by {groupDetails.createdby}</Typography>
                     </Box>                    
                     <AvatarGroup max={2}>
                         <Avatar key={user.email}>{user.username.split(' ').slice(0, 2).map(word => word[0].toUpperCase()).join('')}</Avatar>
-                        {groupMembers.filter(member => member.email !== user.email).map(member => <Avatar key={member.email}>{member.username.split(' ').slice(0, 2).map(word => word[0].toUpperCase()).join('')}</Avatar>)}
+                        {groupMembers.filter(member => member.id !== user.id).map(member => <Avatar key={member.email}>{member.username.split(' ').slice(0, 2).map(word => word[0].toUpperCase()).join('')}</Avatar>)}
                     </AvatarGroup>
                 </Box>
                 <Divider sx={{marginTop: 2, marginBottom: 1}}><Chip label='Members' /></Divider>
