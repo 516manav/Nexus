@@ -1,13 +1,16 @@
 import { Dialog, DialogTitle, DialogActions, DialogContent, Typography, Slide, Box, Avatar, IconButton, Tooltip, Zoom, Collapse, TextField } from "@mui/material";
 import { Close, Save, Delete, Lock } from "@mui/icons-material";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useContext, useEffect, useState, useRef } from "react";
 import ProfileFields from "./profilefields.js";
 import PasswordField from "./passwordfield.js";
+import { SocketContext } from "./contexts/socketcontext.js";
 
 const Transition = React.forwardRef((props, ref) => <Slide direction="up" ref={ref} {...props} />);
 
-function Profile({ socket, user, showProfile, setShowProfile, handleLogout, isAdmin }) {
+function Profile({ user, showProfile, setShowProfile, handleLogout, isAdmin }) {
 
+    const { socket } = useContext(SocketContext);
+    const prevPassword = useRef(null);
     const [show, setShow] = useState(showProfile);
     const [profile, setProfile] = useState(null);
     const [edit, setEdit] = useState(false);
@@ -39,17 +42,23 @@ function Profile({ socket, user, showProfile, setShowProfile, handleLogout, isAd
 
     useEffect(() => {
         socket.emit('get-user-profile', user);
+        function initialUserProfile(userProfile) {
+            prevPassword.current = userProfile.password;
+            setProfile({...userProfile, currentPassword: '', newPassword: '', avatar: userProfile.name});
+        }
         function handleUserProfile(updatedProfile) {
             if(updatedProfile !== 'error') {
-                setProfile({...updatedProfile, currentPassword: '', newPassword: '', avatar: updatedProfile.name});
-                handleTransition(false);
                 setChangePassword(false);
+                handleTransition(false);
+                setProfile({...updatedProfile, currentPassword: '', newPassword: '', avatar: updatedProfile.name});
             } else
             setChangePasswordSuccess(false);
         }
         socket.on('user-profile', handleUserProfile);
+        socket.on('initial-user-profile', initialUserProfile);
         return(() => {
             socket.off('user-profile', handleUserProfile);
+            socket.off('initial-user-profile', initialUserProfile);
         });
     }, [user, socket, handleTransition]);
 
@@ -88,8 +97,8 @@ function Profile({ socket, user, showProfile, setShowProfile, handleLogout, isAd
                     <TextField fullWidth label='Email' value={profile.email} size="small" sx={{marginY: 1}} InputProps={{ readOnly: true, sx: {borderRadius: 2}}} />
                     <ProfileFields hover={hover} setHover={setHover} edit={edit} value={profile.name} label='Name' setProfile={setProfile} handleTransition={handleTransition} isAdmin={isAdmin}/>
                     <ProfileFields hover={hover} setHover={setHover} edit={edit} value={profile.status} label='Status' setProfile={setProfile} handleTransition={handleTransition} isAdmin={isAdmin}/>
-                    <Collapse in={changePassword} timeout={200}>
-                        <PasswordField changePasswordSuccess={changePasswordSuccess} setChangePasswordSuccess={setChangePasswordSuccess} passwordValid ={passwordValid} profile={profile} setProfile={setProfile} setPasswordValid={setPasswordValid}/>                        
+                    <Collapse in={changePassword} timeout={200} onAnimationEnd={() => prevPassword.current = profile.password}>
+                        <PasswordField changePasswordSuccess={changePasswordSuccess} prevPassword={prevPassword.current} setChangePasswordSuccess={setChangePasswordSuccess} passwordValid ={passwordValid} profile={profile} setProfile={setProfile} setPasswordValid={setPasswordValid}/>                        
                     </Collapse>
                 </Box>                
             </DialogContent>

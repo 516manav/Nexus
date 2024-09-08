@@ -1,15 +1,20 @@
 import { Box, Typography, Grow } from "@mui/material";
 import { Diversity2 } from "@mui/icons-material";
-import { useEffect } from "react";
+import { useContext, useEffect } from "react";
+import { UserContext } from "./contexts/usercontext.js";
+import { SocketContext } from "./contexts/socketcontext.js";
 
-function InitialContentPage({ socket, userId }) {
+function InitialContentPage() {
+
+    const { socket } = useContext(SocketContext);
+    const { user } = useContext(UserContext);
 
     useEffect(() => {
         function handleNewMessage(newMessage) {
             socket.emit('unread-message', newMessage);
         }
         function handleNewGroupMessage(newMessage) {
-            socket.emit('unread-group-message', newMessage, userId);
+            socket.emit('unread-group-message', newMessage, user.id);
         }
         if(socket) {
             socket.on('receive-personal-message', handleNewMessage);
@@ -22,7 +27,7 @@ function InitialContentPage({ socket, userId }) {
                 socket.off('receive-group-message', handleNewGroupMessage);
             }
         }
-    }, [socket, userId]);
+    }, [socket, user]);
 
     return(
         <Box sx={{color: '#bdbdbd', textAlign: 'center'}}>

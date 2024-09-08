@@ -1,12 +1,16 @@
-import { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { Send } from '@mui/icons-material';
 import { Box, TextField, Fab, Zoom, Grow } from "@mui/material";
 import MessageArea from "./messagearea.js";
 import ContactBar from "./contactbar.js";
 import InitialContentPage from "./initialcontentpage.js";
+import { UserClickedContext } from "./contexts/userclickedcontext.js";
+import { TransitionContext } from "./contexts/transitioncontext.js";
 
-function ContentArea ({ user, isMobile, socket, userClicked, setUserClicked, transition }) {
+const ContentArea = React.memo(({ isMobile }) => {
 
+    const { userClicked } = useContext(UserClickedContext);
+    const { transition } = useContext(TransitionContext);
     const [message, setMessage] = useState("");
     const [send, setSend] = useState('');
 
@@ -31,8 +35,8 @@ function ContentArea ({ user, isMobile, socket, userClicked, setUserClicked, tra
             {userClicked !== null ?
             (<Box sx={{minWidth: 0, display: 'flex', flexDirection: 'column', height: '100%'}}>
                 <Box sx={{display: 'flex', flexDirection: 'column', height: '100%'}}>
-                  <ContactBar transition={transition} user={user} socket={socket} userClicked={userClicked} setUserClicked={setUserClicked}/>
-                  <Box sx={{flexGrow: 1, overflowY: 'auto'}}><MessageArea user={user} setMessage={setSend} message={send} userClicked={userClicked} socket={socket} /></Box>
+                  <ContactBar />
+                  <Box sx={{flexGrow: 1, overflowY: 'auto'}}><MessageArea setMessage={setSend} message={send}/></Box>
                   <Grow in={transition} timeout={200} sx={{
                     width: 'calc(100%-32px)',
                     marginTop: '5px',
@@ -54,9 +58,9 @@ function ContentArea ({ user, isMobile, socket, userClicked, setUserClicked, tra
                   </Grow>
                 </Box>
             </Box>)           
-            : <InitialContentPage socket={socket} userId={user.id} />}
+            : <InitialContentPage />}
         </Box>
     );
-}
+});
 
 export default ContentArea;

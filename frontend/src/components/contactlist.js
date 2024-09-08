@@ -1,11 +1,19 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { List, ListItem, ListItemButton, ListItemAvatar, Avatar, ListItemText, Typography, Grow, IconButton, Tooltip, Fab, Zoom, Box, Badge } from "@mui/material";
 import { PriorityHighOutlined, Favorite, FavoriteBorder, GroupRemove, Add } from '@mui/icons-material';
 import CreateGroup from "./creategroup.js";
 import isEqual from 'lodash/isEqual.js';
+import { UserContext } from "./contexts/usercontext.js";
+import { SocketContext } from "./contexts/socketcontext.js";
+import { UserClickedContext } from "./contexts/userclickedcontext.js";
+import { ListClickContext } from "./contexts/listclickcontext.js";
 
-function ContactList({ content, userClicked, socket, user, tab, users, handleListClick, handleDrawer }) {
+function ContactList({ content, tab, handleDrawer }) {
 
+    const { handleListClick } = useContext(ListClickContext);
+    const { userClicked } = useContext(UserClickedContext);
+    const { user } = useContext(UserContext);
+    const { socket } = useContext(SocketContext);
     const [hover, setHover] = useState(-1);
     const [array, setArray] = useState(null);
     const [favourites, setFavourites] = useState(null);
@@ -82,9 +90,9 @@ function ContactList({ content, userClicked, socket, user, tab, users, handleLis
     function contentGenerator() {
         if(transition) {
         if(array && array.length !== 0)
-        return array.map((element, index) => (
-            <Grow in={transition} timeout={250} key={index}>
-                <ListItem disablePadding onMouseEnter={() => setHover(index)} onMouseLeave={() => setHover(-1)}>
+        return array.map(element => (
+            <Grow in={transition} timeout={250} key={element.id}>
+                <ListItem disablePadding onMouseEnter={() => setHover(element.id)} onMouseLeave={() => setHover(-1)}>
                     <ListItemButton  selected={selected === element.id} >
                         <ListItemAvatar onClick={() => handleClick(element)}>
                             <Badge badgeContent={element.messagecount} color="primary">
@@ -104,7 +112,7 @@ function ContactList({ content, userClicked, socket, user, tab, users, handleLis
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
                             }}}/>
-                        <Grow in={index === hover} timeout={250}>
+                        <Grow in={element.id === hover} timeout={250}>
                             <Tooltip title={favourites && isFavourite(element.id) ? buttons.filledTip : buttons.outlineTip}>
                                 <IconButton edge='end' onClick={() => handleFavourites(element.id)}>
                                     {favourites && isFavourite(element.id) ? buttons.filled : buttons.outline}
@@ -137,7 +145,7 @@ function ContactList({ content, userClicked, socket, user, tab, users, handleLis
                     </Fab>
                 </Tooltip>        
             </Zoom>
-            <CreateGroup users={users} socket={socket} user={user} open={showCreateGroup} setOpen={setShowCreateGroup}/>
+            <CreateGroup open={showCreateGroup} setOpen={setShowCreateGroup}/>
         </Box>
     );
 }

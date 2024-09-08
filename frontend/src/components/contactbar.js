@@ -1,11 +1,19 @@
 import { IconButton, Avatar, Box, Typography, Menu, MenuItem, ListItemIcon, ListItemText, Divider, Grow } from "@mui/material";
 import { MoreVert, InfoOutlined, DeleteOutline } from '@mui/icons-material';
-import { useState } from "react";
+import { useContext, useState } from "react";
 import Profile from "./profile.js";
 import GroupProfile from "./groupprofile.js";
+import { SocketContext } from "./contexts/socketcontext.js";
+import { UserContext } from "./contexts/usercontext.js";
+import { UserClickedContext } from "./contexts/userclickedcontext.js";
+import { TransitionContext } from "./contexts/transitioncontext.js";
 
-function ContactBar({ transition, user, socket, userClicked, setUserClicked }) {
+function ContactBar() {
 
+    const { transition } = useContext(TransitionContext);
+    const { socket } = useContext(SocketContext);
+    const { user } = useContext(UserContext);
+    const { userClicked } = useContext(UserClickedContext);
     const [anchorEl, setAnchorEl] = useState(null);
     const [showProfile, setShowProfile] = useState(false);
 
@@ -44,8 +52,8 @@ function ContactBar({ transition, user, socket, userClicked, setUserClicked }) {
                 <ListItemText primary='Clear chat'/>
                 </MenuItem>
             </Menu>
-            {(showProfile && userClicked.tab !== 2) ? (<Profile isAdmin={false} user={userClicked.id} showProfile={showProfile} setShowProfile={setShowProfile} socket={socket}/>)
-            : (<GroupProfile setUserClicked={setUserClicked} user={user} group={userClicked.id} showProfile={showProfile} setShowProfile={setShowProfile} socket={socket} />)}
+            {showProfile && (userClicked.tab !== 2 ? (<Profile isAdmin={false} user={userClicked.id} showProfile={showProfile} setShowProfile={setShowProfile} />)
+            : (<GroupProfile group={userClicked.id} showProfile={showProfile} setShowProfile={setShowProfile} />))}
             <Divider />
             </Box>
         </Grow>

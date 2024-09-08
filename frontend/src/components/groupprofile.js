@@ -1,11 +1,17 @@
 import { Dialog, DialogTitle, DialogActions, DialogContent, Chip, Typography, Slide, Box, Divider, Avatar, IconButton, Tooltip, Zoom, AvatarGroup } from "@mui/material";
 import { Close, GroupRemove } from "@mui/icons-material";
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
+import { UserContext } from "./contexts/usercontext.js";
+import { SocketContext } from "./contexts/socketcontext.js";
+import { ListClickContext } from "./contexts/listclickcontext.js";
 
 const Transition = React.forwardRef((props, ref) => <Slide direction="up" ref={ref} {...props} />);
 
-function GroupProfile({ user, group, showProfile, setShowProfile, socket, setUserClicked }) {
+function GroupProfile({ group, showProfile, setShowProfile }) {
 
+    const { handleListClick } = useContext(ListClickContext);
+    const { user } = useContext(UserContext);
+    const { socket } = useContext(SocketContext);
     const [show, setShow] = useState(true);
     const [groupDetails, setGroupDetails] = useState(null);
     const [groupMembers, setGroupMembers] = useState([]);
@@ -31,7 +37,7 @@ function GroupProfile({ user, group, showProfile, setShowProfile, socket, setUse
     function handleLeave() {
         socket.emit('leave-group', user, group);
         handleClose();
-        setUserClicked(null);
+        handleListClick(null);
     }
 
     function handleClose() {

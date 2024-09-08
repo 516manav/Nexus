@@ -2,7 +2,7 @@ import { TextField, InputAdornment, IconButton, Box, Typography } from "@mui/mat
 import { Visibility, VisibilityOff, Diversity2 } from "@mui/icons-material";
 import { useState, useEffect } from "react";
 
-function LoginPart ({ user, setConfirmPasswordValid, registerData, setPasswordValid, setEmailValid, setUser, emailValid, passwordValid }) {
+function LoginPart ({ user, showRegister, setConfirmPasswordValid, registerData, setPasswordValid, setEmailValid, setUser, emailValid, passwordValid }) {
 
     const [showPassword, setShowPassword] = useState(false);
 
@@ -12,12 +12,14 @@ function LoginPart ({ user, setConfirmPasswordValid, registerData, setPasswordVa
                 check: true,
                 message: ''
             });
-        else
+        else {
+            if(showRegister)
             setPasswordValid({
                 check: false,
                 message: "Password should be atleast 12 characters long and must contain atleast one uppercase letter, one special symbol and one digit"           
             });
-    }, [user.password, setPasswordValid]);
+        }
+    }, [user.password, showRegister, setPasswordValid]);
 
     function passwordValidate(password) {
         const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@#$%^&*!])[A-Za-z\d@#$%^&*!]{12,}$/;

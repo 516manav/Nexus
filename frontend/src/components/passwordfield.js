@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { IconButton, TextField, InputAdornment, Box } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 
-function PasswordField({ changePasswordSuccess, setChangePasswordSuccess, passwordValid, setPasswordValid, profile, setProfile }) {
+function PasswordField({ prevPassword, changePasswordSuccess, setChangePasswordSuccess, passwordValid, setPasswordValid, profile, setProfile }) {
 
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showCurrentPassword, setShowCurrentPassword] = useState(false);
@@ -17,7 +17,7 @@ function PasswordField({ changePasswordSuccess, setChangePasswordSuccess, passwo
 
     return(
         <Box>
-            {profile.password !== 'google' && <TextField fullWidth required type={showCurrentPassword ? "text" : "password"} label='Enter Current Password' size="small" sx={{marginY: 1}} value={profile.currentPassword} 
+            {prevPassword !== 'google' && <TextField fullWidth required type={showCurrentPassword ? "text" : "password"} label='Enter Current Password' size="small" sx={{marginY: 1}} value={profile.currentPassword} 
             onChange={e => {
                     setProfile(prevValue => ({...prevValue, currentPassword: e.target.value})); 
                     if(!changePasswordSuccess)

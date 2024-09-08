@@ -1,31 +1,27 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useContext } from "react";
 import Navbar from "./navbar.js";
 import { useTheme, useMediaQuery, Box } from "@mui/material";
 import Sidebar from "./sidebar.js";
 import ContentArea from "./contentarea.js";
 import io from 'socket.io-client';
 import { useNavigate } from 'react-router-dom';
+import { UserContext } from "./contexts/usercontext.js";
+import { SocketContext } from "./contexts/socketcontext.js";
+import { UserClickedContext } from "./contexts/userclickedcontext.js";
+import { UserDetailsContext } from "./contexts/userdetails.js";
+import { UserDeletedContext } from "./contexts/userdeletedcontext.js";
 
-function Chat({ user }) {
+function Chat() {
 
+  const { user } = useContext(UserContext);
+  const { setUserDeleted } = useContext(UserDeletedContext);
+  const { setSocket } = useContext(SocketContext);
+  const { userClicked, setUserClicked } = useContext(UserClickedContext);
+  const { userDetails, setUserDetails } = useContext(UserDetailsContext);
   const navigate = useNavigate();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const [userDetails, setUserDetails] = useState(null);
-  const [socket, setSocket] = useState(null);
-  const [contactClicked, setContactClicked] = useState(null);  
-  const [transition, setTransition] = useState(true);
-
-  const handleListClick = useCallback(element => {
-    if(element !== contactClicked){
-      setTransition(false);
-      setTimeout(() => {
-        setTransition(true);
-        setContactClicked(element);
-      }, 100);
-    }
-  }, [contactClicked]);
 
   useEffect(() => {
     function handleSocketConnect() {
@@ -53,6 +49,12 @@ function Chat({ user }) {
     function handleUpdateProfile() {
       socket.emit('details', user);
     }
+    function handleUserDelete(userId) {
+      setUserDeleted(prevValue => (prevValue + 1) % 2);
+      handleUpdateProfile();
+      if(userClicked && userId === userClicked.id && userClicked.tab !== 2)
+      setUserClicked(null);
+    }
     const socket = io('http://localhost:8080');
     setSocket(socket);
     socket.on('update-profile', handleUpdateProfile);
@@ -62,6 +64,7 @@ function Chat({ user }) {
     socket.on('new-user-added', handleSocketConnect);
     socket.on('receive-details', handleSocketReceiveDetails);
     socket.on('unread-update', handleUnreadUpdate);
+    socket.on('user-deleted', handleUserDelete);
 
     return (() => {
       socket.off('update-profile', handleUpdateProfile);
@@ -71,9 +74,10 @@ function Chat({ user }) {
       socket.off('connect', handleSocketConnect);
       socket.off('new-user-added', handleSocketConnect);
       socket.off('receive-details', handleSocketReceiveDetails);
+      socket.off('user-deleted', handleUserDelete);
       socket.disconnect();
     })
-  },[navigate, user]);
+  },[navigate, userClicked, user, setSocket, setUserClicked, setUserDetails, setUserDeleted]);
 
   const handleDrawer = useCallback(() => {
     setDrawerOpen( prevValue => !prevValue);
@@ -82,9 +86,9 @@ function Chat({ user }) {
   return (
     <Box sx={{display: 'flex', height: '100vh'}}>
       <Box sx={{display: 'flex', flexDirection: 'column', flexGrow: 1}}>
-        <Navbar theme={theme} socket={socket} isMobile={isMobile} user={user} drawerOpen={drawerOpen} handleDrawer={handleDrawer} />
-        {userDetails === null ? '' : <Sidebar isMobile={isMobile} userClicked={contactClicked} drawerOpen={drawerOpen} handleDrawer={handleDrawer} details={userDetails} user={user} socket={socket} handleListClick={handleListClick}/>}
-        <ContentArea user={user} isMobile={isMobile} socket={socket} userClicked={contactClicked} setUserClicked={handleListClick} transition={transition}/>   
+        <Navbar theme={theme} isMobile={isMobile} drawerOpen={drawerOpen} handleDrawer={handleDrawer} />
+        {userDetails && <Sidebar isMobile={isMobile} drawerOpen={drawerOpen} handleDrawer={handleDrawer} />}
+        <ContentArea isMobile={isMobile} />
       </Box>
     </Box>
   );

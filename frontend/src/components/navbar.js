@@ -1,11 +1,15 @@
-import { useCallback, useState } from "react";
+import React, { useCallback, useContext, useState } from "react";
 import axios from "axios";
 import { Close, AccountCircle, ManageAccounts, Logout, Diversity2 } from '@mui/icons-material';
 import { Tooltip, IconButton, AppBar, Toolbar, Typography, Menu, MenuItem, ListItemIcon, ListItemText } from "@mui/material";
 import Profile from './profile.js';
+import { UserContext } from "./contexts/usercontext.js";
+import { SocketContext } from "./contexts/socketcontext.js";
 
-function Navbar ({ user, isMobile, theme, drawerOpen, handleDrawer, socket }) {
+const Navbar = React.memo(({ isMobile, theme, drawerOpen, handleDrawer }) => {
 
+    const { user } = useContext(UserContext);
+    const { socket } = useContext(SocketContext);
     const [anchorEl, setAnchorEl] = useState();
     const [showProfile, setShowProfile] = useState(false);
 
@@ -50,10 +54,10 @@ function Navbar ({ user, isMobile, theme, drawerOpen, handleDrawer, socket }) {
             <ListItemText primary='Logout' />
             </MenuItem>
           </Menu>
-          {showProfile && <Profile user={user.id} isAdmin={true} handleLogout={handleLogout} socket={socket} setShowProfile={setShowProfile} showProfile={showProfile}/>}
+          {showProfile && <Profile isAdmin={true} user={user.id} handleLogout={handleLogout} setShowProfile={setShowProfile} showProfile={showProfile}/>}
         </Toolbar>
       </AppBar>
     );
-}
+});
 
 export default Navbar;

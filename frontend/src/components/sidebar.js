@@ -1,7 +1,8 @@
 import DrawerContent from "./drawercontent.js";
 import { Drawer, Toolbar } from "@mui/material";
+import React from "react";
 
-function Sidebar ({ isMobile, userClicked, drawerOpen, handleDrawer, details, user, socket, handleListClick }) {
+const Sidebar = React.memo(({ isMobile, drawerOpen, handleDrawer }) => {
 
     return (
         <Drawer variant={isMobile ? 'temporary' : 'permanent'}
@@ -18,9 +19,9 @@ function Sidebar ({ isMobile, userClicked, drawerOpen, handleDrawer, details, us
             }
         }} >
             <Toolbar />
-            <DrawerContent userClicked={userClicked} handleListClick={handleListClick} details={details} user={user} socket={socket} handleDrawer={handleDrawer}/>
+            <DrawerContent handleDrawer={handleDrawer}/>
         </Drawer>
     );
-}
+});
 
 export default Sidebar;

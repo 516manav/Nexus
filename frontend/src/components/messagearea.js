@@ -1,11 +1,19 @@
 import { Box, Fab, Zoom } from "@mui/material";
 import { KeyboardDoubleArrowDown } from '@mui/icons-material';
-import { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useContext, useMemo } from "react";
 import { v4 as uuidv4 } from 'uuid';
 import Message from "./message.js";
+import { UserContext } from "./contexts/usercontext.js";
+import { SocketContext } from "./contexts/socketcontext.js";
+import { UserClickedContext } from "./contexts/userclickedcontext.js";
+import { UserDeletedContext } from "./contexts/userdeletedcontext.js";
 
-function MessageArea ({ message, setMessage, socket, userClicked, user }) {
+const MessageArea = React.memo(({ message, setMessage}) => {
 
+    const { userDeleted }  = useContext(UserDeletedContext);
+    const { user } = useContext(UserContext);
+    const { socket } = useContext(SocketContext);
+    const { userClicked } = useContext(UserClickedContext);
     const [messages, setMessages] = useState([]);
     const containerRef = useRef(null);
     const [showButton, setShowButton] = useState(false);
@@ -25,7 +33,7 @@ function MessageArea ({ message, setMessage, socket, userClicked, user }) {
         }
         function handleMessages(messageArray) {
             shouldScroll.current = true;
-            setMessages(messageArray);
+            setMessages(messageArray.map(element => ({...element, messagetime: new Date(element.messagetime)})));
         }
         function handleNewMessage(newMessage) {
             if(newMessage.senderid === userClicked.id || newMessage.receiverid === userClicked.id) {
@@ -66,7 +74,7 @@ function MessageArea ({ message, setMessage, socket, userClicked, user }) {
             socket.off('receive-group-message', handleNewGroupMessage);
             socket.off('group-members', handleGroupMembers);
         };
-    }, [socket, userClicked, user]);
+    }, [socket, userClicked, user, userDeleted]);
 
     useEffect(() => {
         if(message !== ''){
@@ -117,21 +125,22 @@ function MessageArea ({ message, setMessage, socket, userClicked, user }) {
         date2 = new Date(date2);
         return (date1.getFullYear() === date2.getFullYear() && date1.getMonth() === date2.getMonth() && date1.getDate() === date2.getDate());
     }
+
+    const memoizedMessages = useMemo(() => messages.map((message, index) => {
+        const showdate = (index === 0 || !isSameDay(message.messagetime, messages[index-1].messagetime));
+        const showsender = (showdate || message.senderid !== messages[index-1].senderid);
+        if((userClicked.tab === 2 && message.groupid !== undefined) || (userClicked.tab !== 2 && message.groupid === undefined))
+        return <Message showDate={showdate} showSender={showsender} members={groupMembers.current} key={message.id} messageDetails={message} isGroupMessage={userClicked.tab === 2}/>;
+        return null;             
+    }), [messages, userClicked]);
     
     return (
         <Box ref={containerRef} sx={{overflow: 'auto', height: '100%'}}>
             <Zoom in={showButton} onClick={scrollToBottom}><Fab size="small" sx={{position: 'fixed', backgroundColor: 'rgb(206, 206, 206)', bottom: {xs: 74, sm: 82}, right: 25}}><KeyboardDoubleArrowDown/></Fab></Zoom>
-            {messages.map((message, index) => {
-                let messageTime = message.messagetime;
-                if(typeof messageTime !== 'object')
-                messageTime = new Date(messageTime);
-                const showdate = (index === 0 || !isSameDay(message.messagetime, messages[index-1].messagetime));
-                const showsender = (showdate || message.senderid !== messages[index-1].senderid);
-                return <Message showDate={showdate} showSender={showsender} members={groupMembers.current} isGroupMessage={userClicked.tab === 2} key={message.id} message={{...message, messagetime: messageTime}} user={user.id} userClicked={userClicked.id} socket={socket}/>;               
-            })}
+            {memoizedMessages}
             <Box ref={bottomRef} sx={{height: '3px'}} />
         </Box>
     );
-}
+});
 
 export default MessageArea;

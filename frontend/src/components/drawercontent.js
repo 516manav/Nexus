@@ -1,10 +1,14 @@
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useContext } from "react";
 import { Chip, Box, TextField, InputAdornment } from "@mui/material";
 import { Search } from '@mui/icons-material';
 import ContactList from './contactlist.js';
+import { UserContext } from "./contexts/usercontext.js";
+import { UserDetailsContext } from "./contexts/userdetails.js";
 
-function DrawerContent ({ details, userClicked, socket, user, handleListClick, handleDrawer }) {
+const DrawerContent = React.memo(({ handleDrawer }) => {
 
+    const { userDetails } = useContext(UserDetailsContext);
+    const { user } = useContext(UserContext);
     const [activeChip, setActiveChip] = useState(1);
     const currentChip = useRef(1);
     const search = useRef('');
@@ -12,30 +16,30 @@ function DrawerContent ({ details, userClicked, socket, user, handleListClick, h
 
     useEffect(() => {
       if(currentChip.current === 1)
-      setContent({array: details.users.filter(element => element.id !== user.id), favourites: details.favourites.map(element => element.id)});
+      setContent({array: userDetails.users.filter(element => element.id !== user.id), favourites: userDetails.favourites.map(element => element.id)});
       else if(currentChip.current === 2)
-      setContent({array: details.groups});
+      setContent({array: userDetails.groups});
       else
-      setContent({array: details.favourites});
-    }, [details, user]);
+      setContent({array: userDetails.favourites});
+    }, [userDetails, user]);
 
     function handleSearch() {
       setActiveChip(currentChip.current);
       if(currentChip.current === 1){
         if(search.current !== '')
-        setContent({array: details.users.filter(element => element.email.slice(0, Math.min(search.current.length, element.email.length)) === search.current && element.id !== user.id), favourites: details.favourites.map(element => element.id)});
+        setContent({array: userDetails.users.filter(element => element.email.slice(0, Math.min(search.current.length, element.email.length)) === search.current && element.id !== user.id), favourites: userDetails.favourites.map(element => element.id)});
         else
-        setContent({array: details.users.filter(element => element.id !== user.id), favourites: details.favourites.map(element => element.id)});
+        setContent({array: userDetails.users.filter(element => element.id !== user.id), favourites: userDetails.favourites.map(element => element.id)});
       }else if(currentChip.current === 2){
         if(search.current !== '')
-        setContent({array: details.groups.filter(element => element.name.slice(0, Math.min(search.current.length, element.name.length)) === search.current)});
+        setContent({array: userDetails.groups.filter(element => element.name.slice(0, Math.min(search.current.length, element.name.length)) === search.current)});
         else
-        setContent({array: details.groups});
+        setContent({array: userDetails.groups});
       }else{
         if(search.current !== '')
-        setContent({array: details.favourites.filter(element => element.email.slice(0, Math.min(search.current.length, element.email.length)) === search.current && element.id !== user.id)});
+        setContent({array: userDetails.favourites.filter(element => element.email.slice(0, Math.min(search.current.length, element.email.length)) === search.current && element.id !== user.id)});
         else
-        setContent({array: details.favourites});
+        setContent({array: userDetails.favourites});
       } 
     }
 
@@ -57,9 +61,9 @@ function DrawerContent ({ details, userClicked, socket, user, handleListClick, h
                 <Search />
               </InputAdornment>
             )}} />
-            {content === null ? "" : <ContactList userClicked={userClicked} users={details.users.map(element => element.email)} content={content} user={user} socket={socket} tab={currentChip.current} handleDrawer={handleDrawer} handleListClick={handleListClick}/>}
+            {content === null ? "" : <ContactList content={content} tab={activeChip} handleDrawer={handleDrawer}/>}
         </Box>
     );
-}
+});
 
 export default DrawerContent;

@@ -1,32 +1,38 @@
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Slide, TextField, Tooltip, List, Collapse, ListItem, Box, ListItemButton, ListItemText, Paper, Chip, Divider, Grow } from "@mui/material";
 import { GroupAdd, PriorityHigh } from '@mui/icons-material';
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
+import { UserContext } from "./contexts/usercontext";
+import { SocketContext } from "./contexts/socketcontext";
+import { UserDetailsContext } from "./contexts/userdetails";
 
 const Transition = React.forwardRef((props, ref) => <Slide direction="up" ref={ref} {...props} />);
 
-function CreateGroup({ open, setOpen, users, user, socket }) {
+const CreateGroup = React.memo(({ open, setOpen }) => {
 
+    const { user } = useContext(UserContext);
+    const { userDetails } = useContext(UserDetailsContext);
+    const { socket } = useContext(SocketContext);
     const [groupName, setGroupName] = useState('');
     const [search, setSearch] = useState('');
-    const [members, setMembers] = useState([user.email]);
+    const [members, setMembers] = useState([{email: user.email, id: user.id}]);
     const [menuItems, setMenuItems] = useState([]);
-    const [deleteChip, setDeleteChip] = useState(''); 
+    const [deleteChip, setDeleteChip] = useState(-1); 
 
     useEffect(() => {
         if(search !== '')
-        setMenuItems(users.filter(element => element.slice(0, Math.min(search.length, element.length)) === search));
-    }, [search, users]);
+        setMenuItems(userDetails.users.filter(element => element.email.slice(0, Math.min(search.length, element.email.length)) === search));
+    }, [search, userDetails]);
 
     function addMember(newMember) {
         setSearch('');
-        if(!members.includes(newMember))
+        if(!members.some(member => member.id === newMember.id))
         setMembers(prevValue => [...prevValue, newMember]);
     }
     
     function deleteMember(member) {
-        setDeleteChip(member);  
+        setDeleteChip(member.id);  
         setTimeout(() => {
-            setMembers(prevValue => prevValue.filter(element => element !== member)); 
+            setMembers(prevValue => prevValue.filter(element => element.id !== member.id)); 
             setDeleteChip(''); 
         }, 300);  
     }
@@ -39,8 +45,9 @@ function CreateGroup({ open, setOpen, users, user, socket }) {
         setOpen(false);
         setGroupName('');
         setSearch('');
-        setMembers([user.email]);
+        setMembers([{email: user.email, id: user.id}]);
         setMenuItems([]);
+        setDeleteChip(-1);
     }
 
     return (
@@ -58,10 +65,10 @@ function CreateGroup({ open, setOpen, users, user, socket }) {
                         <ListItemText><PriorityHigh sx={{verticalAlign: 'sub', fontSize: '1.3rem'}}/>No user found</ListItemText>
                     </ListItemButton>
                     </ListItem>) : 
-                    menuItems.map((menuItem, index) => (
-                        <ListItem key={index} disablePadding>
+                    menuItems.map(menuItem => (
+                    <ListItem key={menuItem.id} disablePadding>
                     <ListItemButton sx={{paddingY: '2px', width: '100%'}} onClick={() => addMember(menuItem)}>
-                        <ListItemText>{menuItem}</ListItemText>
+                        <ListItemText>{menuItem.email}</ListItemText>
                     </ListItemButton>
                     </ListItem>))}
                 </List>
@@ -70,7 +77,7 @@ function CreateGroup({ open, setOpen, users, user, socket }) {
             <Divider sx={{marginTop: 2}}><Chip label='Members'/></Divider>
             <Box>
                 <Chip size="small" label={user.email} variant="outlined"/>
-                {members.filter(member => member !== user.email).map((member, index) => (<Grow key={index} in={member !== deleteChip}><Chip size="small" sx={{marginX: '2px', marginY: '5px'}} label={member} variant="outlined" onDelete={() => deleteMember(member)}/></Grow>))}
+                {members.filter(member => member.id !== user.id).map(member => (<Grow key={member.id} in={member.id !== deleteChip}><Chip size="small" sx={{marginX: '2px', marginY: '5px'}} label={member.email} variant="outlined" onDelete={() => deleteMember(member)}/></Grow>))}
             </Box>           
         </DialogContent>
         <DialogActions>
@@ -84,6 +91,6 @@ function CreateGroup({ open, setOpen, users, user, socket }) {
         </DialogActions>
     </Dialog>
     );
-}
+});
 
 export default CreateGroup;

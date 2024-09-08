@@ -48,27 +48,31 @@ export default function socketSetup(io, db) {
             io.to(user.id).emit('receive-details', details);
         });
 
-        socket.on('delete-user', async userId => {
-            await db.query('DELETE FROM users WHERE id = $1', [userId]);
+        socket.on('delete-user', userId => {
+            for(let room of io.sockets.adapter.rooms.keys()) {
+                if(room !== userId)
+                io.to(room).emit('user-deleted', userId);
+            }
+            db.query('DELETE FROM users WHERE id = $1', [userId]);
         });
 
         socket.on('get-user-profile', async userId => {
             const result = await db.query('SELECT email, username AS name, status, password FROM users WHERE id = $1', [userId]);
-            socket.emit('user-profile', result.rows[0]);
+            socket.emit('initial-user-profile', result.rows[0]);
         });
 
         socket.on('update-user-profile', async (profile, userId) => {
             let result = {rows: ['error']};
             if(profile.password === 'google' && profile.newPassword !== '') {
                 const hash = await bcrypt.hash(profile.newPassword, config.SALT_ROUNDS);
-                result = await db.query('UPDATE users SET email = $1, password = $2, username = $3, status = $4 WHERE id = $5 RETURNING email, password, username AS name, status', [profile.email, hash, capitalize(profile.name), profile.status, userId]);
+                result = await db.query('UPDATE users SET password = $1, username = $2, status = $3 WHERE id = $4 RETURNING email, password, username AS name, status', [hash, capitalize(profile.name), profile.status, userId]);
             }else if(profile.newPassword === '' && profile.currentPassword === '')
-                result = await db.query('UPDATE users SET email = $1, username = $2, status = $3 WHERE id = $4 RETURNING email, password, username AS name, status', [profile.email, capitalize(profile.name), profile.status, userId]);
+                result = await db.query('UPDATE users SET username = $1, status = $2 WHERE id = $3 RETURNING email, password, username AS name, status', [capitalize(profile.name), profile.status, userId]);
             else {
                 const match = await bcrypt.compare(profile.currentPassword, profile.password);
                 if(match){
                     const hash = await bcrypt.hash(profile.newPassword, config.SALT_ROUNDS);
-                    result = await db.query('UPDATE users SET email = $1, password = $2,  username = $3, status = $4 WHERE id = $5 RETURNING email, password, username AS name, status', [profile.email, hash, capitalize(profile.name), profile.status, userId]);
+                    result = await db.query('UPDATE users SET password = $1,  username = $2, status = $3 WHERE id = $4 RETURNING email, password, username AS name, status', [hash, capitalize(profile.name), profile.status, userId]);
                 }
             }
             socket.emit('user-profile', result.rows[0]);
@@ -87,9 +91,8 @@ export default function socketSetup(io, db) {
         socket.on('create-group', async (groupName, members, useremail) => {
             const groupId = await db.query('INSERT INTO groupnames (groupname, createdby) VALUES ($1, $2) RETURNING id', [groupName, useremail]);
             for(const member of members) {
-                const userId = await db.query('SELECT id FROM users WHERE email = $1', [member]);
-                await db.query('INSERT INTO groupdetails VALUES ($1, $2)', [groupId.rows[0].id, userId.rows[0].id]);
-                io.to(userId.rows[0].id).emit('update-profile');
+                await db.query('INSERT INTO groupdetails VALUES ($1, $2)', [groupId.rows[0].id, member.id]);
+                io.to(member.id).emit('update-profile');
             }
         });
 
@@ -101,7 +104,7 @@ export default function socketSetup(io, db) {
 
         socket.on('leave-group', async (user, groupId) => {
             let members = await db.query('SELECT userid FROM groupdetails WHERE groupid = $1 AND userid != $2', [groupId, user.id]);
-            const leaveMessage = {id: uuidv4(), type: 1, senderid: user.id, groupid: groupId, textmessage: `${user.username} ~ ${user.email} left.`};
+            const leaveMessage = {id: uuidv4(), type: 1, senderid: user.id, groupid: groupId, textmessage: `${user.username} ~ ${user.email} left.`, messagetime: new Date()};
             db.query('INSERT INTO groupmessages (id, senderid, groupid, textmessage, messagetype) VALUES ($1, $2, $3, $4, $5)', [leaveMessage.id, leaveMessage.senderid, leaveMessage.groupid, leaveMessage.textmessage, leaveMessage.type]);
             members.rows.forEach(member => {
                 io.to(member.userid).emit('group-members', members.rows);

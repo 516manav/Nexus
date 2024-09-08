@@ -1,11 +1,22 @@
 import { Typography, Box, Paper, Grow, IconButton, Menu, MenuItem, ListItemIcon, ListItemText } from "@mui/material";
-import { useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { Delete, DeleteForeverOutlined, DeleteOutlined } from '@mui/icons-material';
+import { UserContext } from "./contexts/usercontext.js";
+import { UserClickedContext } from "./contexts/userclickedcontext.js";
+import { SocketContext } from "./contexts/socketcontext.js";
 
-function Message ({members, showDate, showSender, isGroupMessage, socket, userClicked, user, message}) {
+function Message ({members, showDate, showSender, messageDetails, isGroupMessage}) {
 
+    const { user } = useContext(UserContext);
+    const [message, setMessage] = useState({...messageDetails, messagetime: typeof messageDetails.messagetime !== 'object' ? new Date(messageDetails.messagetime) : messageDetails.messagetime});
+    const { userClicked } = useContext(UserClickedContext);
+    const { socket } = useContext(SocketContext);
     const [showDelete, setShowDelete] = useState(false);
     const [anchorEl, setAnchorEl] = useState(null);
+
+    useEffect(() => {
+        setMessage({...messageDetails, messagetime: typeof messageDetails.messagetime !== 'object' ? new Date(messageDetails.messagetime) : messageDetails.messagetime});
+    }, [messageDetails]);
 
     function handleClose() {
         setAnchorEl(null);
@@ -20,7 +31,7 @@ function Message ({members, showDate, showSender, isGroupMessage, socket, userCl
         const yesterday = new Date();
         yesterday.setDate(today.getDate() - 1);
         const date = message.messagetime;
-        if(isSameDay(today, date))
+        if(isSameDay(date, today))
         return 'Today';
         else if(isSameDay(date, yesterday))
         return 'Yesterday';
@@ -34,14 +45,14 @@ function Message ({members, showDate, showSender, isGroupMessage, socket, userCl
 
     function handleDeleteForEveryone() {
         if(members.length !== 0)
-        socket.emit('delete-for-everyone', message.id, user, members, isGroupMessage);
+        socket.emit('delete-for-everyone', message.id, user.id, members, isGroupMessage);
         else
-        socket.emit('delete-for-everyone', message.id, user, userClicked, isGroupMessage);
+        socket.emit('delete-for-everyone', message.id, user.id, userClicked.id, isGroupMessage);
         handleClose();
     }
 
     function handleDeleteForMe() {
-        socket.emit('delete-for-me', message.id, user, isGroupMessage);
+        socket.emit('delete-for-me', message.id, user.id, isGroupMessage);
         handleClose();
     }
 
@@ -62,26 +73,26 @@ function Message ({members, showDate, showSender, isGroupMessage, socket, userCl
                     </Paper>
                 </Grow>
             </Box>}
-            <Box sx={{ marginTop: showSender ? 1 : 0.5, display: 'flex', flexDirection: message.senderid === user ? 'row-reverse' : 'row'}}>
-                <Box sx={{marginX: 2, display: 'flex', flexDirection: message.senderid === user ? 'row-reverse' : 'row', alignItems: 'center'}} onMouseEnter={() => setShowDelete(true)} onMouseLeave={() => setShowDelete(false)}>
+            <Box sx={{ marginTop: showSender ? 1 : 0.5, display: 'flex', flexDirection: message.senderid === user.id ? 'row-reverse' : 'row'}}>
+                <Box sx={{marginX: 2, display: 'flex', flexDirection: message.senderid === user.id ? 'row-reverse' : 'row', alignItems: 'center'}} onMouseEnter={() => setShowDelete(true)} onMouseLeave={() => setShowDelete(false)}>
                 <Grow in={true}>
-                    <Paper component='div' sx={{ display: 'flex', flexDirection: "column", backgroundColor: message.senderid === user ? 'rgb(63, 134, 237)' : '#d9d9d9', borderRadius: 5, paddingX: 2, paddingTop: 0.5}}>
-                        {isGroupMessage && user !== message.senderid && showSender && 
-                        <Box component='div' sx={{ display: 'inline-flex', color: message.senderid === user ? 'white' : 'black', justifyContent: 'space-between', alignItems: 'center'}}>
+                    <Paper component='div' sx={{ display: 'flex', flexDirection: "column", backgroundColor: message.senderid === user.id ? 'rgb(63, 134, 237)' : '#d9d9d9', borderRadius: 5, paddingX: 2, paddingTop: 0.5}}>
+                        {isGroupMessage && user.id !== message.senderid && showSender && 
+                        <Box component='div' sx={{ display: 'inline-flex', color: message.senderid === user.id ? 'white' : 'black', justifyContent: 'space-between', alignItems: 'center'}}>
                             <Typography sx={{paddingRight: 1, color: 'rgb(63, 134, 237)', fontWeight: 'bold', overflowWrap: 'break-word', wordBreak: 'break-word'}} variant="body2">{message.sendername}</Typography>
                             <Typography sx={{fontSize: 10, fontStyle: 'italic', opacity: 0.65, overflowWrap: 'break-word', wordBreak: 'break-word'}} variant="body2">{'~'+message.senderemail}</Typography>
                         </Box>}
-                        <Box component='div' sx={{ display: 'inline-flex', color: message.senderid === user ? 'white' : 'black', justifyContent: 'space-between', alignItems: 'flex-end'}}>
+                        <Box component='div' sx={{ display: 'inline-flex', color: message.senderid === user.id ? 'white' : 'black', justifyContent: 'space-between', alignItems: 'flex-end'}}>
                             <Typography sx={{paddingBottom: 0.5, paddingRight: 1, fontStyle: message.everyone ? 'italic' : 'normal', wordBreak: 'break-word', overflowWrap: 'break-word'}} variant="body1">{message.textmessage}</Typography>
                             <Typography sx={{fontSize: 10, paddingBottom: 0.2}} variant="body2">{String(message.messagetime.getHours()).padStart(2, '0')+':'+String(message.messagetime.getMinutes()).padStart(2, '0')}</Typography>
                         </Box>
                     </Paper>
                 </Grow>
                 {message.type !== 'leave-receipt' && (<Grow in={showDelete && !message.everyone}>
-                    <IconButton sx={{marginX: 0.5}} size="small" onClick={ user === message.senderid ? e => setAnchorEl(e.currentTarget) : handleDeleteForMe}><Delete sx={{color: 'gray', fontSize: 20}}/></IconButton>
+                    <IconButton sx={{marginX: 0.5}} size="small" onClick={ user.id === message.senderid ? e => setAnchorEl(e.currentTarget) : handleDeleteForMe}><Delete sx={{color: 'gray', fontSize: 20}}/></IconButton>
                 </Grow>)}  
                 </Box> 
-                <Menu sx={{'& .MuiList-root': {padding: 0}}} anchorEl={anchorEl} onClose={handleClose} open={Boolean(anchorEl) && user === message.senderid}>
+                <Menu sx={{'& .MuiList-root': {padding: 0}}} anchorEl={anchorEl} onClose={handleClose} open={Boolean(anchorEl) && user.id === message.senderid}>
                     <MenuItem onClick={handleDeleteForEveryone}>
                         <ListItemIcon><DeleteForeverOutlined /></ListItemIcon>
                         <ListItemText primary='Delete for everyone' />
