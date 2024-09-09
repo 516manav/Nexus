@@ -65,14 +65,14 @@ export default function socketSetup(io, db) {
             let result = {rows: ['error']};
             if(profile.password === 'google' && profile.newPassword !== '') {
                 const hash = await bcrypt.hash(profile.newPassword, config.SALT_ROUNDS);
-                result = await db.query('UPDATE users SET password = $1, username = $2, status = $3 WHERE id = $4 RETURNING email, password, username AS name, status', [hash, capitalize(profile.name), profile.status, userId]);
+                result = await db.query('UPDATE users SET password = $1, username = $2, status = $3 WHERE id = $4 RETURNING email, password, username AS name, status', [hash, capitalize(profile.name), profile.status || 'Available', userId]);
             }else if(profile.newPassword === '' && profile.currentPassword === '')
-                result = await db.query('UPDATE users SET username = $1, status = $2 WHERE id = $3 RETURNING email, password, username AS name, status', [capitalize(profile.name), profile.status, userId]);
+                result = await db.query('UPDATE users SET username = $1, status = $2 WHERE id = $3 RETURNING email, password, username AS name, status', [capitalize(profile.name), profile.status || 'Available', userId]);
             else {
                 const match = await bcrypt.compare(profile.currentPassword, profile.password);
                 if(match){
                     const hash = await bcrypt.hash(profile.newPassword, config.SALT_ROUNDS);
-                    result = await db.query('UPDATE users SET password = $1,  username = $2, status = $3 WHERE id = $4 RETURNING email, password, username AS name, status', [hash, capitalize(profile.name), profile.status, userId]);
+                    result = await db.query('UPDATE users SET password = $1,  username = $2, status = $3 WHERE id = $4 RETURNING email, password, username AS name, status', [hash, capitalize(profile.name), profile.status || 'Available', userId]);
                 }
             }
             socket.emit('user-profile', result.rows[0]);
